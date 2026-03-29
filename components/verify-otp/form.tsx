@@ -108,7 +108,9 @@ export function OTPVerificationForm({ email = "belljerome34@gmail.com" }: OTPFor
                             key={index}
                             type="text"
                             maxLength={1}
-                            ref={(el) => (inputRefs.current[index] = el)}
+                            ref={(el) => {
+                                inputRefs.current[index] = el;
+                            }}
                             value={data}
                             onChange={(e) => handleChange(e.target, index)}
                             onKeyDown={(e) => handleKeyDown(e, index)}
