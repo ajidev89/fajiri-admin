@@ -16,7 +16,11 @@ import {
     LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
+import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "@/services";
+import { useAuthStore } from "@/store/auth-store";
 
 const sidebarItems = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
@@ -38,6 +42,23 @@ const bottomSidebarItems = [
 
 export function Sidebar() {
     const pathname = usePathname();
+    const router = useRouter();
+    const clearAuthData = useAuthStore((state) => state.clearAuthData);
+
+    const logoutMutation = useMutation({
+        mutationFn: () => authService.logout(),
+        onSettled: () => {
+            // Always clear data and redirect even if the API call fails
+            Cookies.remove("fajiri_token");
+            clearAuthData();
+            router.push("/login");
+        }
+    });
+
+    const handleLogout = (e: React.MouseEvent) => {
+        e.preventDefault();
+        logoutMutation.mutate();
+    };
 
     return (
         <aside className="fixed left-0 top-0 h-screen w-64 border-r border-[#E9EEF2] bg-white flex flex-col z-50">
@@ -81,20 +102,35 @@ export function Sidebar() {
             <div className="p-4 border-t border-[#E9EEF2] space-y-2">
                 {bottomSidebarItems.map((item) => {
                     const isActive = pathname === item.href;
+                    if (item.label === "Logout") {
+                        return (
+                            <button
+                                key={item.label}
+                                onClick={handleLogout}
+                                disabled={logoutMutation.isPending}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group text-[#F04438] hover:bg-[#FFF4F3] disabled:opacity-50"
+                                )}
+                            >
+                                <item.icon className={cn(
+                                    "h-5 w-5 transition-colors text-[#F04438]"
+                                )} />
+                                <span>{logoutMutation.isPending ? "Logging out..." : "Logout"}</span>
+                            </button>
+                        )
+                    }
                     return (
                         <Link
                             key={item.label}
                             href={item.href}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
-                                item.label === "Logout" 
-                                    ? "text-[#F04438] hover:bg-[#FFF4F3]" 
-                                    : (isActive ? "bg-[#F0F5F9] text-primary" : "text-[#475467] hover:bg-[#F9FAFB] hover:text-primary")
+                                isActive ? "bg-[#F0F5F9] text-primary" : "text-[#475467] hover:bg-[#F9FAFB] hover:text-primary"
                             )}
                         >
                             <item.icon className={cn(
                                 "h-5 w-5 transition-colors",
-                                item.label === "Logout" ? "text-[#F04438]" : (isActive ? "text-primary" : "text-[#475467] group-hover:text-primary")
+                                isActive ? "text-primary" : "text-[#475467] group-hover:text-primary"
                             )} />
                             <span>{item.label}</span>
                         </Link>

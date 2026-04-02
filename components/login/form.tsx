@@ -4,11 +4,15 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Eye, EyeOff, User } from "lucide-react";
+import { Eye, EyeOff, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "@/services";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/auth-store";
 
 const loginSchema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
@@ -21,6 +25,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
+    const router = useRouter();
+    const setAuthData = useAuthStore((state) => state.setAuthData);
 
     const {
         register,
@@ -30,8 +36,22 @@ export function LoginForm() {
         resolver: zodResolver(loginSchema),
     });
 
+    const loginMutation = useMutation({
+        mutationFn: (data: LoginFormValues) => authService.login(data),
+        onSuccess: (response, variables) => {
+            if (response.data) {
+                setAuthData(response.data, variables.email);
+                router.push("/verify-otp");
+            }
+        },
+        onError: (error) => {
+            console.error("Login error:", error);
+            // In a real app, you'd show a toast here
+        },
+    });
+
     const onSubmit = (data: LoginFormValues) => {
-        console.log("Form submitted:", data);
+        loginMutation.mutate(data);
     };
 
     return (
@@ -57,6 +77,7 @@ export function LoginForm() {
                         type="email"
                         {...register("email")}
                         className={errors.email ? "border-red-500" : ""}
+                        disabled={loginMutation.isPending}
                     />
                     {errors.email && (
                         <p className="text-xs text-red-500">
@@ -74,11 +95,13 @@ export function LoginForm() {
                             type={showPassword ? "text" : "password"}
                             {...register("password")}
                             className={errors.password ? "border-red-500" : ""}
+                            disabled={loginMutation.isPending}
                         />
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 disabled:opacity-50"
+                            disabled={loginMutation.isPending}
                         >
                             {showPassword ? (
                                 <EyeOff className="h-4 w-4" />
@@ -105,8 +128,13 @@ export function LoginForm() {
                 <Button
                     type="submit"
                     className="w-full bg-primary hover:bg-primary/90 text-white py-6"
+                    disabled={loginMutation.isPending}
                 >
-                    Login
+                    {loginMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        "Login"
+                    )}
                 </Button>
             </form>
         </div>

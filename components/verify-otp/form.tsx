@@ -1,19 +1,23 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Mail } from "lucide-react";
+import { Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useMutation } from "@tanstack/react-query";
+import { authService, otpService } from "@/services";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/auth-store";
+import Cookies from "js-cookie";
+import { encryptData } from "@/lib/crypto";
 
-interface OTPFormProps {
-    email?: string;
-}
-
-export function OTPVerificationForm({ email = "belljerome34@gmail.com" }: OTPFormProps) {
+export function OTPVerificationForm() {
     const [otp, setOtp] = useState<string[]>(new Array(6).fill(""));
     const [timer, setTimer] = useState(59);
     const [canResend, setCanResend] = useState(false);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+    const router = useRouter();
+    const email = useAuthStore((state) => state.loginEmail);
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -38,7 +42,10 @@ export function OTPVerificationForm({ email = "belljerome34@gmail.com" }: OTPFor
         }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    const handleKeyDown = (
+        e: React.KeyboardEvent<HTMLInputElement>,
+        index: number,
+    ) => {
         if (e.key === "Backspace") {
             if (otp[index] === "" && index > 0) {
                 inputRefs.current[index - 1]?.focus();
@@ -66,20 +73,61 @@ export function OTPVerificationForm({ email = "belljerome34@gmail.com" }: OTPFor
         return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     };
 
-    const handleResend = () => {
-        if (canResend) {
+    const resendMutation = useMutation({
+        mutationFn: () =>
+            otpService.sendOtp({ channel: "email", identifier: email || "" }),
+        onSuccess: () => {
             setTimer(59);
             setCanResend(false);
-            // Add resend logic here
-            console.log("Resending OTP...");
+            console.log("OTP Resent successfully");
+        },
+        onError: (error) => {
+            console.error("Resend OTP error:", error);
+        },
+    });
+
+    const verifyMutation = useMutation({
+        mutationFn: (code: string) =>
+            authService.generateToken({
+                channel: "email",
+                identifier: email || "",
+                code,
+            }),
+        onSuccess: (response) => {
+            if (response.data?.token) {
+                // Save encrypted token in cookies for 24 hours
+                const encryptedToken = encryptData(response.data.token);
+                Cookies.set("fajiri_token", encryptedToken, {
+                    expires: 1,
+                });
+                router.push("/dashboard");
+            }
+        },
+        onError: (error) => {
+            console.error("Verification error:", error);
+        },
+    });
+
+    const handleResend = () => {
+        if (canResend && !resendMutation.isPending) {
+            resendMutation.mutate();
         }
     };
 
     const handleVerify = () => {
         const code = otp.join("");
-        console.log("Verifying code:", code);
-        // Add verification logic here
+        if (code.length === 6) {
+            verifyMutation.mutate(code);
+        }
     };
+
+    if (!email) {
+        // If no email is in store, redirect back to login
+        useEffect(() => {
+            router.push("/login");
+        }, [email, router]);
+        return null;
+    }
 
     return (
         <div className="w-full max-w-md space-y-8 px-4 sm:px-0">
@@ -93,13 +141,15 @@ export function OTPVerificationForm({ email = "belljerome34@gmail.com" }: OTPFor
                     </h1>
                     <p className="text-sm text-[#475467]">
                         We've sent a verification code to email address <br />
-                        <span className="font-medium text-[#101828]">{email}</span>
+                        <span className="font-medium text-[#101828]">
+                            {email}
+                        </span>
                     </p>
                 </div>
             </div>
 
             <div className="space-y-6">
-                <div 
+                <div
                     className="flex justify-between gap-2 sm:gap-4"
                     onPaste={handlePaste}
                 >
@@ -116,8 +166,11 @@ export function OTPVerificationForm({ email = "belljerome34@gmail.com" }: OTPFor
                             onKeyDown={(e) => handleKeyDown(e, index)}
                             className={cn(
                                 "w-12 h-12 sm:w-14 sm:h-14 text-center text-lg font-semibold border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0E3B5D] transition-all",
-                                data ? "border-[#0E3B5D] bg-[#F0F5F9]" : "border-[#D0D5DD] bg-white"
+                                data
+                                    ? "border-[#0E3B5D] bg-[#F0F5F9]"
+                                    : "border-[#D0D5DD] bg-white",
                             )}
+                            disabled={verifyMutation.isPending}
                         />
                     ))}
                 </div>
@@ -125,23 +178,37 @@ export function OTPVerificationForm({ email = "belljerome34@gmail.com" }: OTPFor
                 <Button
                     onClick={handleVerify}
                     className="w-full bg-[#0E3B5D] hover:bg-[#0E3B5D]/90 text-white py-6 text-base font-semibold rounded-lg shadow-sm"
-                    disabled={otp.some(v => v === "")}
+                    disabled={
+                        otp.some((v) => v === "") || verifyMutation.isPending
+                    }
                 >
-                    Verify
+                    {verifyMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        "Verify"
+                    )}
                 </Button>
 
                 <div className="text-center">
                     <p className="text-sm text-[#475467]">
-                        Resend Code in{" "}
-                        <span 
-                            className={cn(
-                                "font-semibold transition-colors",
-                                canResend ? "text-[#0E3B5D] cursor-pointer" : "text-[#0E3B5D]"
-                            )}
-                            onClick={handleResend}
-                        >
-                            {formatTime(timer)}
-                        </span>
+                        {resendMutation.isPending ? (
+                            "Resending..."
+                        ) : (
+                            <>
+                                Resend Code in{" "}
+                                <span
+                                    className={cn(
+                                        "font-semibold transition-colors",
+                                        canResend
+                                            ? "text-primary cursor-pointer hover:underline"
+                                            : "text-[#0E3B5D]",
+                                    )}
+                                    onClick={handleResend}
+                                >
+                                    {formatTime(timer)}
+                                </span>
+                            </>
+                        )}
                     </p>
                 </div>
             </div>
