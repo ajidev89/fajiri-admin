@@ -43,6 +43,13 @@ function getToken(): string | null {
 
 async function handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
+        if (response.status === 401) {
+            Cookies.remove("fajiri_user");
+            Cookies.remove("fajiri_token");
+            if (typeof window !== "undefined") {
+                window.location.href = "/login";
+            }
+        }
         const error = await response.json().catch(() => ({}));
         throw new Error(
             error.message || `Request failed with status ${response.status}`,

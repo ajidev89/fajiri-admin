@@ -8,151 +8,100 @@ import DashboardLayout from "@/layout/dashboard";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { 
-    DropdownMenu, 
-    DropdownMenuContent, 
-    DropdownMenuItem, 
-    DropdownMenuTrigger 
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-// Define the shape of our data
-type User = {
-    id: string;
-    no: number;
-    name: string;
-    email: string;
-    role: "Donor" | "Member" | "Beneficiary";
-    dateJoined: string;
-    lastActive: string;
-    status: "Active" | "Suspended";
-};
-
-// Mock data
-const users: User[] = [
-    {
-        id: "1",
-        no: 1,
-        name: "Jerome Bell",
-        email: "belljerome34@gmail.com",
-        role: "Donor",
-        dateJoined: "10-02-2026",
-        lastActive: "Yesterday",
-        status: "Active",
-    },
-    {
-        id: "2",
-        no: 2,
-        name: "Floyd Miles",
-        email: "floydmiles210@gmail.com",
-        role: "Member",
-        dateJoined: "10-02-2026",
-        lastActive: "Today",
-        status: "Active",
-    },
-    {
-        id: "3",
-        no: 3,
-        name: "Jerome Bell",
-        email: "belljerome34@gmail.com",
-        role: "Beneficiary",
-        dateJoined: "10-02-2026",
-        lastActive: "Last week",
-        status: "Suspended",
-    },
-    {
-        id: "4",
-        no: 4,
-        name: "Floyd Miles",
-        email: "floydmiles210@gmail.com",
-        role: "Member",
-        dateJoined: "10-02-2026",
-        lastActive: "Today",
-        status: "Active",
-    },
-    {
-        id: "5",
-        no: 5,
-        name: "Jerome Bell",
-        email: "belljerome34@gmail.com",
-        role: "Donor",
-        dateJoined: "10-02-2026",
-        lastActive: "Yesterday",
-        status: "Suspended",
-    },
-    {
-        id: "6",
-        no: 6,
-        name: "Jerome Bell",
-        email: "belljerome34@gmail.com",
-        role: "Donor",
-        dateJoined: "10-02-2026",
-        lastActive: "Yesterday",
-        status: "Suspended",
-    },
-    {
-        id: "7",
-        no: 7,
-        name: "Floyd Miles",
-        email: "floydmiles210@gmail.com",
-        role: "Member",
-        dateJoined: "10-02-2026",
-        lastActive: "Today",
-        status: "Active",
-    },
-    {
-        id: "8",
-        no: 8,
-        name: "Jerome Bell",
-        email: "belljerome34@gmail.com",
-        role: "Donor",
-        dateJoined: "10-02-2026",
-        lastActive: "Yesterday",
-        status: "Active",
-    },
-];
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { UserWithWallet, usersService } from "@/services/users";
+import { format } from "date-fns";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 // Columns definition
-const columns: ColumnDef<User>[] = [
+const columns: ColumnDef<UserWithWallet>[] = [
     {
-        accessorKey: "no",
+        id: "no",
         header: "No",
-        cell: ({ row }) => <span className="text-[#667085]">{row.getValue("no")}</span>,
+        cell: ({ row }) => (
+            <span className="text-[#667085]">{row.index + 1}</span>
+        ),
     },
     {
-        accessorKey: "name",
+        id: "name",
         header: "Name",
-        cell: ({ row }) => <span className="font-medium text-[#101828]">{row.getValue("name")}</span>,
+        accessorFn: (row) =>
+            `${row.profile?.first_name || ""} ${row.profile?.last_name || ""}`.trim(),
+        cell: ({ row }) => (
+            <span className="font-medium text-[#101828]">
+                {row.getValue("name")}
+            </span>
+        ),
     },
     {
         accessorKey: "email",
         header: "Email",
-        cell: ({ row }) => <span className="text-[#475467]">{row.getValue("email")}</span>,
+        cell: ({ row }) => (
+            <span className="text-[#475467]">{row.getValue("email")}</span>
+        ),
     },
     {
-        accessorKey: "role",
+        id: "role",
         header: "Role",
-        cell: ({ row }) => <span className="text-[#475467]">{row.getValue("role")}</span>,
+        accessorFn: (row) => row.role?.name,
+        cell: ({ row }) => (
+            <span className="text-[#475467]">{row.getValue("role")}</span>
+        ),
     },
     {
-        accessorKey: "dateJoined",
+        accessorKey: "created_at",
         header: "Date Joined",
+        cell: ({ row }) => {
+            const date = row.getValue("created_at") as string;
+            return (
+                <span className="text-[#475467]">
+                    {date ? format(new Date(date), "dd-MM-yyyy") : "-"}
+                </span>
+            );
+        },
     },
     {
-        accessorKey: "lastActive",
+        accessorKey: "last_login_at",
         header: "Last Active",
-        cell: ({ row }) => <span className="text-[#475467]">{row.getValue("lastActive")}</span>,
+        cell: ({ row }) => {
+            const date = row.getValue("last_login_at") as string;
+            return (
+                <span className="text-[#475467]">
+                    {date ? format(new Date(date), "dd-MM-yyyy") : "-"}
+                </span>
+            );
+        },
     },
     {
-        accessorKey: "status",
+        id: "status",
         header: "Status",
+        accessorKey: "status",
         cell: ({ row }) => {
             const status = row.getValue("status") as string;
             return (
-                <div className={cn(
-                    "px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center",
-                    status === "Active" && "bg-green-50 text-green-700 border border-green-200",
-                    status === "Suspended" && "bg-red-50 text-red-700 border border-red-200",
-                )}>
+                <div
+                    className={cn(
+                        "px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center capitalize",
+                        status === "active" &&
+                            "bg-green-50 text-green-700 border border-green-200",
+                        status === "suspended" &&
+                            "bg-red-50 text-red-700 border border-red-200",
+                    )}
+                >
                     {status}
                 </div>
             );
@@ -160,50 +109,164 @@ const columns: ColumnDef<User>[] = [
     },
     {
         id: "actions",
-        cell: ({ row }) => (
+        cell: ({ row }) => <UserActionCell user={row.original} />,
+    },
+];
+
+function UserActionCell({ user }: { user: UserWithWallet }) {
+    const [isSuspendModalOpen, setIsSuspendModalOpen] = React.useState(false);
+    const queryClient = useQueryClient();
+
+    const isSuspended = user.deleted_at !== null;
+
+    const blockMutation = useMutation({
+        mutationFn: () => usersService.blockUser(user.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["users"] });
+            setIsSuspendModalOpen(false);
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || "Failed to block user");
+            setIsSuspendModalOpen(false);
+        },
+    });
+
+    const unblockMutation = useMutation({
+        mutationFn: () => usersService.unblockUser(user.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["users"] });
+            setIsSuspendModalOpen(false);
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || "Failed to unblock user");
+            setIsSuspendModalOpen(false);
+        },
+    });
+
+    const handleConfirm = () => {
+        if (isSuspended) {
+            unblockMutation.mutate();
+        } else {
+            blockMutation.mutate();
+        }
+    };
+
+    const isSubmitting = blockMutation.isPending || unblockMutation.isPending;
+
+    return (
+        <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-[#667085]">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-[#667085]"
+                    >
                         <MoreHorizontal className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                        <Link href={`/dashboard/users/${row.original.id}`}>
+                        <Link href={`/dashboard/users/${user.id}`}>
                             View Profile
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>Change Role</DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600">Suspend User</DropdownMenuItem>
+                    <DropdownMenuItem
+                        className={
+                            isSuspended ? "text-green-600" : "text-red-600"
+                        }
+                        onClick={() => setIsSuspendModalOpen(true)}
+                    >
+                        {isSuspended ? "Unsuspend User" : "Suspend User"}
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
-        ),
-    },
-];
+
+            <Dialog
+                open={isSuspendModalOpen}
+                onOpenChange={setIsSuspendModalOpen}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>
+                            {isSuspended ? "Unsuspend User" : "Suspend User"}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {isSuspended
+                                ? `Are you sure you want to unsuspend ${user.profile?.first_name || "this user"}? They will regain access to the platform.`
+                                : `Are you sure you want to suspend ${user.profile?.first_name || "this user"}? They will lose access to the platform until unsuspended.`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="mt-4 gap-2 sm:gap-0">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsSuspendModalOpen(false)}
+                            disabled={isSubmitting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="default"
+                            className={
+                                isSuspended
+                                    ? "bg-green-600 hover:bg-green-700 text-white"
+                                    : "bg-red-600 hover:bg-red-700 text-white"
+                            }
+                            onClick={handleConfirm}
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting
+                                ? "Processing..."
+                                : isSuspended
+                                  ? "Unsuspend"
+                                  : "Suspend"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
 
 export default function UsersPage() {
+    const { data: usersRes, isLoading } = useQuery({
+        queryKey: ["users"],
+        queryFn: () => usersService.getUsers(),
+    });
+
+    const users = React.useMemo(() => usersRes?.data ?? [], [usersRes]);
+
     return (
         <DashboardLayout>
             <div className="space-y-8">
                 {/* Header Section */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="space-y-1">
-                        <h2 className="text-2xl font-bold text-[#101828]">Users</h2>
-                        <p className="text-sm text-[#475467]">Manage platform members, donors, and beneficiaries.</p>
+                        <h2 className="text-2xl font-bold text-[#101828]">
+                            Users
+                        </h2>
+                        <p className="text-sm text-[#475467]">
+                            Manage platform members, donors, and beneficiaries.
+                        </p>
                     </div>
                     <div>
-                        <Button variant="outline" className="border-[#EAECF0] text-[#344054] font-semibold flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            className="border-[#EAECF0] text-[#344054] font-semibold flex items-center gap-2"
+                        >
                             <FileDown className="h-4 w-4" /> Export CSV
                         </Button>
                     </div>
                 </div>
 
                 {/* Table Section */}
-                <DataTable 
-                    columns={columns} 
-                    data={users} 
-                    searchKey="name" 
-                    title="Users Table" 
+                <DataTable
+                    columns={columns}
+                    data={users}
+                    searchKey="name"
+                    title="Users Table"
+                    isLoading={isLoading}
                 />
             </div>
         </DashboardLayout>

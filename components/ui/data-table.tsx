@@ -31,12 +31,19 @@ import {
     MoreHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
     searchKey?: string;
     title?: string;
+    isLoading?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -44,6 +51,7 @@ export function DataTable<TData, TValue>({
     data,
     searchKey,
     title,
+    isLoading,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -86,9 +94,21 @@ export function DataTable<TData, TValue>({
                     <Button variant="outline" className="h-10 border-[#EAECF0] text-[#344054] font-medium gap-2">
                         <Filter className="h-4 w-4" /> Filter
                     </Button>
-                    <Button variant="outline" className="h-10 border-[#EAECF0] text-[#344054] font-medium gap-2 hidden lg:flex">
-                        <ArrowUpDown className="h-4 w-4" /> Sort by
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="h-10 border-[#EAECF0] text-[#344054] font-medium gap-2 hidden lg:flex">
+                                <ArrowUpDown className="h-4 w-4" /> Sort by
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-[150px] bg-white">
+                            <DropdownMenuItem onClick={() => setSorting([{ id: searchKey || "id", desc: false }])} className="cursor-pointer">
+                                Ascending
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setSorting([{ id: searchKey || "id", desc: true }])} className="cursor-pointer">
+                                Descending
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
 
@@ -112,7 +132,16 @@ export function DataTable<TData, TValue>({
                         ))}
                     </TableHeader>
                     <TableBody>
-                        {table.getRowModel().rows?.length ? (
+                        {isLoading ? (
+                            <TableRow>
+                                <TableCell colSpan={columns.length} className="h-24 text-center">
+                                    <div className="flex items-center justify-center gap-2">
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                        Loading...
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ) : table.getRowModel().rows?.length ? (
                             table.getRowModel().rows.map((row) => (
                                 <TableRow
                                     key={row.id}
@@ -128,8 +157,8 @@ export function DataTable<TData, TValue>({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No results.
+                                <TableCell colSpan={columns.length} className="h-24 text-center text-[#667085]">
+                                    No results found.
                                 </TableCell>
                             </TableRow>
                         )}
