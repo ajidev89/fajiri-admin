@@ -79,7 +79,6 @@ export default function UserDetailsPage() {
 
     const user = userRes?.data;
 
-    console.log(user);
 
     if (isLoading) {
         return (
@@ -180,7 +179,7 @@ export default function UserDetailsPage() {
                                 </h4>
                             </div>
                             <div className="p-8 space-y-6">
-                                <InfoItem label="Member ID" value={user?.id} />
+                                <InfoItem label="Member ID" value={user?.id ?? ""} />
                                 <InfoItem
                                     label="Account Plan"
                                     value={user?.account_type ?? ""}
@@ -191,7 +190,7 @@ export default function UserDetailsPage() {
                                 /> */}
                                 <InfoItem
                                     label="Phone Number"
-                                    value={userData.phone}
+                                    value={user?.phone ?? ""}
                                 />
                                 <InfoItem
                                     label="Role"
@@ -239,10 +238,10 @@ export default function UserDetailsPage() {
                                         <CheckCircle2 className="h-4 w-4 text-green-500" />
                                     }
                                 />
-                                <InfoItem
-                                    label="Last Password Change"
-                                    value={user?.last_password_change ?? ""}
-                                />
+                                 <InfoItem
+                                     label="Last Password Change"
+                                     value={(user as any)?.last_password_change ?? ""}
+                                 />
                             </div>
                         </div>
                     </div>

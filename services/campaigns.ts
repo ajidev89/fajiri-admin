@@ -46,6 +46,8 @@ export interface Analytics {
     total_percentage_change: number;
     active_campaigns: number;
     active_percentage_change: number;
+    pending_campaigns: number;
+    pending_percentage_change: number;
     completed_campaigns: number;
     completed_percentage_change: number;
     rejected_campaigns: number;

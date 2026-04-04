@@ -146,7 +146,6 @@ export default function DonationsPage() {
         [donationsRes],
     );
 
-    console.log(donations);
 
     return (
         <DashboardLayout>

@@ -13,15 +13,18 @@ export interface Donation {
     currency: string;
     status: string;
     reference: string;
+    medium?: string;
     created_at: string;
     updated_at: string;
     deleted_at: string;
 }
 
 export interface DonationWithCampaign extends Donation {
+    donatable_type: "App\\Models\\Campaign";
     donatable: Campaign;
 }
 export interface DonationWithNeed extends Donation {
+    donatable_type: "App\\Models\\Need";
     donatable: Need;
 }
 

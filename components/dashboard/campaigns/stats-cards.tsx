@@ -62,7 +62,7 @@ export function CampaignStats() {
             title: "Active Campaigns",
             value: analytics?.data.active_campaigns,
             change: analytics?.data.active_percentage_change,
-            trend: analytics?.data.active_percentage_change > 0 ? "up" : "down",
+            trend: (analytics?.data?.active_percentage_change ?? 0) > 0 ? "up" : "down",
             icon: Megaphone,
             bgColor: "bg-[#0E3B5D]/10",
             iconColor: "text-[#0E3B5D]",
@@ -72,7 +72,7 @@ export function CampaignStats() {
             value: analytics?.data.pending_campaigns,
             change: analytics?.data.pending_percentage_change,
             trend:
-                analytics?.data.pending_percentage_change > 0 ? "up" : "down",
+                (analytics?.data?.pending_percentage_change ?? 0) > 0 ? "up" : "down",
             icon: Clock,
             bgColor: "bg-[#F79009]/10",
             iconColor: "text-[#F79009]",
@@ -82,7 +82,7 @@ export function CampaignStats() {
             value: analytics?.data.completed_campaigns,
             change: analytics?.data.completed_percentage_change,
             trend:
-                analytics?.data?.completed_percentage_change > 0
+                (analytics?.data?.completed_percentage_change ?? 0) > 0
                     ? "up"
                     : "down",
             icon: CheckCircle,
@@ -94,7 +94,7 @@ export function CampaignStats() {
             value: analytics?.data.rejected_campaigns,
             change: analytics?.data.rejected_percentage_change,
             trend:
-                analytics?.data?.rejected_percentage_change > 0 ? "up" : "down",
+                (analytics?.data?.rejected_percentage_change ?? 0) > 0 ? "up" : "down",
             icon: XCircle,
             bgColor: "bg-[#F04438]/10",
             iconColor: "text-[#F04438]",

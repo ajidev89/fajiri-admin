@@ -13,6 +13,7 @@ import { useMutation } from "@tanstack/react-query";
 import { authService } from "@/services";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
+import { toast } from "sonner";
 
 const loginSchema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
@@ -45,8 +46,7 @@ export function LoginForm() {
             }
         },
         onError: (error) => {
-            console.error("Login error:", error);
-            // In a real app, you'd show a toast here
+            toast.error(error.message);
         },
     });
 
