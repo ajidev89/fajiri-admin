@@ -32,8 +32,16 @@ export const planService = {
     return apiClient.get<ApiResponse<Plan[]>>("/plans");
   },
 
+  createPlan(payload: UpdatePlanPayload) {
+    return apiClient.post<ApiResponse<Plan>>("/plans", payload);
+  },
+
   updatePlan(planId: string, payload: UpdatePlanPayload) {
     return apiClient.put<ApiResponse<Plan>>(`/plans/${planId}`, payload);
+  },
+
+  deletePlan(planId: string) {
+    return apiClient.delete<ApiResponse<null>>(`/plans/${planId}`);
   },
 
   subscribeToPlan(payload: SubscribeToPlanPayload) {
