@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/layout/dashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
 import {
     Select,
     SelectContent,
@@ -32,18 +31,18 @@ import {
     Link as LinkIcon,
     Quote,
     UploadCloud,
-    Calendar,
-    Clock,
 } from "lucide-react";
 import { blogService, categoryService, type Category } from "@/services";
 import { useAuthStore } from "@/store/auth-store";
 import { toast } from "sonner";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 
-export default function CreateBlogPostPage() {
+export default function EditBlogPostPage() {
     const router = useRouter();
+    const { slug } = useParams();
     const { user } = useAuthStore();
 
+    const [postId, setPostId] = React.useState("");
     const [title, setTitle] = React.useState("");
     const [content, setContent] = React.useState("");
     const [categoryId, setCategoryId] = React.useState("");
@@ -52,25 +51,42 @@ export default function CreateBlogPostPage() {
     const [imagePreview, setImagePreview] = React.useState<string | null>(null);
     const [categories, setCategories] = React.useState<Category[]>([]);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [isLoading, setIsLoading] = React.useState(true);
     const [mounted, setMounted] = React.useState(false);
 
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     React.useEffect(() => {
         setMounted(true);
-        const fetchCategories = async () => {
+        const fetchData = async () => {
+            setIsLoading(true);
             try {
-                const response = await categoryService.getCategories();
-                setCategories(response.data);
-                if (response.data.length > 0) {
-                    setCategoryId(response.data[0].id);
+                const [categoriesRes, postRes] = await Promise.all([
+                    categoryService.getCategories(),
+                    blogService.getPost(slug as string),
+                ]);
+
+                setCategories(categoriesRes.data);
+
+                const post = postRes.data;
+                setPostId(post.id);
+                setTitle(post.title);
+                setContent(post.content);
+                setCategoryId(post.category_id);
+                setStatus(post.status);
+                if (post.image) {
+                    setImagePreview(post.image);
                 }
-            } catch (error) {
-                console.error("Failed to fetch categories", error);
+            } catch (error: any) {
+                toast.error(error.message || "Failed to fetch data");
+                router.push("/dashboard/content");
+            } finally {
+                setIsLoading(false);
             }
         };
-        fetchCategories();
-    }, []);
+
+        if (slug) fetchData();
+    }, [slug, router]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -84,7 +100,7 @@ export default function CreateBlogPostPage() {
         }
     };
 
-    const handlePublish = async () => {
+    const handleUpdate = async () => {
         if (!title || !content || !categoryId) {
             toast.error("Please fill in all required fields");
             return;
@@ -92,26 +108,35 @@ export default function CreateBlogPostPage() {
 
         setIsSubmitting(true);
         try {
-            await blogService.createPost({
+            await blogService.updatePost(postId, {
                 title,
                 content,
                 category_id: categoryId,
                 status,
                 image: image || undefined,
             });
-            toast.success("Post created successfully");
+            toast.success("Post updated successfully");
             router.push("/dashboard/content");
         } catch (error: any) {
-            toast.error(error.message || "Failed to create post");
+            toast.error(error.message || "Failed to update post");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const name =
-        mounted && user?.profile
-            ? `${user.profile.first_name} ${user.profile.last_name}`
-            : (mounted && user?.email) || "Admin";
+    if (isLoading) {
+        return (
+            <DashboardLayout>
+                <div className="flex items-center justify-center min-h-[400px]">
+                    <p className="text-[#667085]">Loading post data...</p>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    const name = (mounted && user?.profile)
+        ? `${user.profile.first_name} ${user.profile.last_name}`
+        : (mounted && user?.email) || "Admin";
 
     return (
         <DashboardLayout>
@@ -127,7 +152,7 @@ export default function CreateBlogPostPage() {
                         </Link>
                         <ChevronRight className="h-4 w-4 text-[#D0D5DD]" />
                         <span className="font-semibold text-[#101828]">
-                            Create New Post
+                            Edit Post
                         </span>
                     </div>
 
@@ -140,10 +165,10 @@ export default function CreateBlogPostPage() {
                         </Button>
                         <Button
                             className="h-10 bg-primary hover:bg-primary/90 text-white font-semibold px-8"
-                            onClick={handlePublish}
+                            onClick={handleUpdate}
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? "Publishing..." : "Publish"}
+                            {isSubmitting ? "Updating..." : "Update Post"}
                         </Button>
                         <button
                             className="text-sm font-semibold text-red-600 hover:text-red-700 ml-2"
@@ -161,7 +186,7 @@ export default function CreateBlogPostPage() {
                         <Tabs defaultValue="content" className="w-full">
                             <div className="px-8 pt-6 border-b border-[#EAECF0]">
                                 <h4 className="font-bold text-[#101828] mb-6">
-                                    Blog Post Page
+                                    Edit Blog Post
                                 </h4>
                                 <TabsList className="h-auto bg-transparent p-0 gap-8 justify-start border-none">
                                     <TabsTrigger
@@ -169,12 +194,6 @@ export default function CreateBlogPostPage() {
                                         className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
                                     >
                                         Content
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="seo"
-                                        className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
-                                    >
-                                        SEO
                                     </TabsTrigger>
                                 </TabsList>
                             </div>
@@ -210,13 +229,13 @@ export default function CreateBlogPostPage() {
                                     />
                                 </div>
 
-                                {/* Image Upload (Placeholder) */}
+                                {/* Image Upload */}
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold text-[#344054]">
-                                        Upload Image
+                                        Featured Image
                                     </Label>
                                     <div
-                                        className="border-2 border-dashed border-[#D0D5DD] rounded-2xl p-10 flex flex-col items-center justify-center gap-3 bg-[#F9FAFB] group hover:border-primary/50 transition-colors cursor-pointer relative overflow-hidden"
+                                        className="border-2 border-dashed border-[#D0D5DD] rounded-2xl p-10 flex flex-col items-center justify-center gap-3 bg-[#F9FAFB] group hover:border-primary/50 transition-colors cursor-pointer relative overflow-hidden h-[250px]"
                                         onClick={() =>
                                             fileInputRef.current?.click()
                                         }
@@ -254,14 +273,20 @@ export default function CreateBlogPostPage() {
                                             onChange={handleImageChange}
                                         />
                                     </div>
+                                    {imagePreview && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="mt-2"
+                                            onClick={() => {
+                                                setImage(null);
+                                                setImagePreview(null);
+                                            }}
+                                        >
+                                            Remove Image
+                                        </Button>
+                                    )}
                                 </div>
-                            </TabsContent>
-
-                            <TabsContent
-                                value="seo"
-                                className="p-8 h-64 flex items-center justify-center text-[#667085] focus-visible:ring-0"
-                            >
-                                SEO optimization tools will appear here.
                             </TabsContent>
                         </Tabs>
                     </div>
@@ -274,7 +299,7 @@ export default function CreateBlogPostPage() {
                             </h4>
                         </div>
                         <div className="p-8 space-y-6">
-                            {/* Author Select */}
+                            {/* Author */}
                             <div className="space-y-2">
                                 <Label className="text-xs font-semibold text-[#344054] uppercase tracking-wider">
                                     Author
@@ -282,11 +307,7 @@ export default function CreateBlogPostPage() {
                                 <div className="h-12 border border-[#D0D5DD] rounded-md px-3 flex items-center gap-2 bg-[#F9FAFB]">
                                     <Avatar className="h-6 w-6">
                                         <AvatarImage
-                                            src={
-                                                (mounted &&
-                                                    user?.profile?.avatar) ||
-                                                ""
-                                            }
+                                            src={mounted && user?.profile?.avatar || ""}
                                         />
                                         <AvatarFallback>
                                             {name.substring(0, 2).toUpperCase()}
@@ -298,27 +319,30 @@ export default function CreateBlogPostPage() {
                                 </div>
                             </div>
 
-                            {/* Post Date & Time */}
+                            {/* Status */}
                             <div className="space-y-2">
                                 <Label className="text-xs font-semibold text-[#344054] uppercase tracking-wider">
-                                    Post Date
+                                    Status
                                 </Label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="relative">
-                                        <Input
-                                            defaultValue="02-10-2026"
-                                            className="pl-10 h-12 border-[#D0D5DD] shadow-none focus:ring-primary/20"
-                                        />
-                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
-                                    </div>
-                                    <div className="relative">
-                                        <Input
-                                            defaultValue="16:00"
-                                            className="pl-10 h-12 border-[#D0D5DD] shadow-none focus:ring-primary/20"
-                                        />
-                                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
-                                    </div>
-                                </div>
+                                <Select
+                                    value={status}
+                                    onValueChange={setStatus}
+                                >
+                                    <SelectTrigger className="h-12 border-[#D0D5DD] shadow-none focus:ring-primary/20">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="published">
+                                            Published
+                                        </SelectItem>
+                                        <SelectItem value="draft">
+                                            Draft
+                                        </SelectItem>
+                                        <SelectItem value="archived">
+                                            Archived
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             {/* Category Select */}
@@ -344,23 +368,6 @@ export default function CreateBlogPostPage() {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            </div>
-
-                            {/* Tags Input */}
-                            <div className="space-y-2">
-                                <Label className="text-xs font-semibold text-[#344054] uppercase tracking-wider">
-                                    Tag
-                                </Label>
-                                <div className="min-h-12 p-2 bg-white border border-[#D0D5DD] rounded-xl flex flex-wrap gap-2 items-center">
-                                    <Badge
-                                        variant="outline"
-                                        className="bg-[#F9FAFB] border-[#EAECF0] hover:bg-white text-[#344054] px-2 py-1 flex items-center gap-1"
-                                    >
-                                        Vaccination{" "}
-                                        <X className="h-3 w-3 cursor-pointer" />
-                                    </Badge>
-                                    <Plus className="h-4 w-4 text-[#667085] cursor-pointer ml-1" />
-                                </div>
                             </div>
                         </div>
                     </div>

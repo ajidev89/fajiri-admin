@@ -7,11 +7,9 @@ import DashboardLayout from "@/layout/dashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
 import {
     Select,
     SelectContent,
@@ -24,30 +22,32 @@ import {
     Eye,
     X,
     Plus,
-    Bold,
-    Italic,
-    AlignLeft,
-    AlignCenter,
-    List,
-    Link as LinkIcon,
-    Quote,
     UploadCloud,
     Calendar,
     Clock,
+    MapPin,
+    Users,
+    DollarSign,
 } from "lucide-react";
-import { blogService, categoryService, type Category } from "@/services";
+import { eventService, categoryService, type Category } from "@/services";
 import { useAuthStore } from "@/store/auth-store";
 import { toast } from "sonner";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 
-export default function CreateBlogPostPage() {
+export default function CreateEventPage() {
     const router = useRouter();
     const { user } = useAuthStore();
 
     const [title, setTitle] = React.useState("");
-    const [content, setContent] = React.useState("");
+    const [description, setDescription] = React.useState("");
     const [categoryId, setCategoryId] = React.useState("");
-    const [status, setStatus] = React.useState("published");
+    const [location, setLocation] = React.useState("");
+    const [startDate, setStartDate] = React.useState("");
+    const [endDate, setEndDate] = React.useState("");
+    const [status, setStatus] = React.useState("upcoming");
+    const [slots, setSlots] = React.useState<number>(0);
+    const [amount, setAmount] = React.useState<number | string>(0);
+    const [isFeatured, setIsFeatured] = React.useState(false);
     const [image, setImage] = React.useState<File | null>(null);
     const [imagePreview, setImagePreview] = React.useState<string | null>(null);
     const [categories, setCategories] = React.useState<Category[]>([]);
@@ -85,24 +85,30 @@ export default function CreateBlogPostPage() {
     };
 
     const handlePublish = async () => {
-        if (!title || !content || !categoryId) {
-            toast.error("Please fill in all required fields");
+        if (!title || !description || !categoryId || !startDate) {
+            toast.error("Please fill in all required fields (Title, Description, Category, Start Date)");
             return;
         }
 
         setIsSubmitting(true);
         try {
-            await blogService.createPost({
+            await eventService.createEvent({
                 title,
-                content,
+                description,
                 category_id: categoryId,
+                location,
+                start_date: startDate,
+                end_date: endDate || undefined,
                 status,
+                slots,
+                amount,
+                is_featured: isFeatured,
                 image: image || undefined,
             });
-            toast.success("Post created successfully");
-            router.push("/dashboard/content");
+            toast.success("Event created successfully");
+            router.push("/dashboard/content?tab=events");
         } catch (error: any) {
-            toast.error(error.message || "Failed to create post");
+            toast.error(error.message || "Failed to create event");
         } finally {
             setIsSubmitting(false);
         }
@@ -127,7 +133,7 @@ export default function CreateBlogPostPage() {
                         </Link>
                         <ChevronRight className="h-4 w-4 text-[#D0D5DD]" />
                         <span className="font-semibold text-[#101828]">
-                            Create New Post
+                            Create New Event
                         </span>
                     </div>
 
@@ -143,7 +149,7 @@ export default function CreateBlogPostPage() {
                             onClick={handlePublish}
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? "Publishing..." : "Publish"}
+                            {isSubmitting ? "Publishing..." : "Publish Event"}
                         </Button>
                         <button
                             className="text-sm font-semibold text-red-600 hover:text-red-700 ml-2"
@@ -161,20 +167,14 @@ export default function CreateBlogPostPage() {
                         <Tabs defaultValue="content" className="w-full">
                             <div className="px-8 pt-6 border-b border-[#EAECF0]">
                                 <h4 className="font-bold text-[#101828] mb-6">
-                                    Blog Post Page
+                                    Event Details
                                 </h4>
                                 <TabsList className="h-auto bg-transparent p-0 gap-8 justify-start border-none">
                                     <TabsTrigger
                                         value="content"
                                         className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
                                     >
-                                        Content
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="seo"
-                                        className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
-                                    >
-                                        SEO
+                                        Information
                                     </TabsTrigger>
                                 </TabsList>
                             </div>
@@ -186,10 +186,10 @@ export default function CreateBlogPostPage() {
                                 {/* Title Field */}
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold text-[#344054]">
-                                        Title
+                                        Event Title
                                     </Label>
                                     <Input
-                                        placeholder="Enter blog post title"
+                                        placeholder="Enter event title"
                                         className="h-14 bg-white border-[#D0D5DD] text-lg font-medium shadow-none focus-visible:ring-primary/20 placeholder:text-[#98A2B3]"
                                         value={title}
                                         onChange={(e) =>
@@ -198,25 +198,41 @@ export default function CreateBlogPostPage() {
                                     />
                                 </div>
 
-                                {/* Text Editor */}
+                                {/* Description Editor */}
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold text-[#344054]">
-                                        Text
+                                        Description
                                     </Label>
                                     <RichTextEditor
-                                        value={content}
-                                        onChange={setContent}
-                                        placeholder="Start writing your story..."
+                                        value={description}
+                                        onChange={setDescription}
+                                        placeholder="Describe your event..."
                                     />
                                 </div>
 
-                                {/* Image Upload (Placeholder) */}
+                                {/* Location Field */}
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold text-[#344054]">
-                                        Upload Image
+                                        Location
+                                    </Label>
+                                    <div className="relative">
+                                        <Input
+                                            placeholder="Enter event location (or 'Virtual')"
+                                            className="h-12 pl-10 bg-white border-[#D0D5DD] shadow-none focus-visible:ring-primary/20"
+                                            value={location}
+                                            onChange={(e) => setLocation(e.target.value)}
+                                        />
+                                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
+                                    </div>
+                                </div>
+
+                                {/* Image Upload */}
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-semibold text-[#344054]">
+                                        Event Image
                                     </Label>
                                     <div
-                                        className="border-2 border-dashed border-[#D0D5DD] rounded-2xl p-10 flex flex-col items-center justify-center gap-3 bg-[#F9FAFB] group hover:border-primary/50 transition-colors cursor-pointer relative overflow-hidden"
+                                        className="border-2 border-dashed border-[#D0D5DD] rounded-2xl p-10 flex flex-col items-center justify-center gap-3 bg-[#F9FAFB] group hover:border-primary/50 transition-colors cursor-pointer relative overflow-hidden h-[250px]"
                                         onClick={() =>
                                             fileInputRef.current?.click()
                                         }
@@ -234,11 +250,7 @@ export default function CreateBlogPostPage() {
                                                 </div>
                                                 <div className="text-center">
                                                     <p className="text-sm text-[#475467]">
-                                                        Drag & Drop your files
-                                                        or{" "}
-                                                        <span className="text-primary font-bold">
-                                                            Browse
-                                                        </span>
+                                                        Drag & Drop or <span className="text-primary font-bold">Browse</span>
                                                     </p>
                                                     <p className="text-xs text-[#667085] mt-1">
                                                         Max. File Size: 10MB
@@ -256,110 +268,135 @@ export default function CreateBlogPostPage() {
                                     </div>
                                 </div>
                             </TabsContent>
-
-                            <TabsContent
-                                value="seo"
-                                className="p-8 h-64 flex items-center justify-center text-[#667085] focus-visible:ring-0"
-                            >
-                                SEO optimization tools will appear here.
-                            </TabsContent>
                         </Tabs>
                     </div>
 
                     {/* Right Column - Sidebar */}
-                    <div className="bg-white rounded-3xl border border-[#EAECF0] shadow-sm overflow-hidden">
-                        <div className="px-8 py-5 border-b border-[#EAECF0]">
-                            <h4 className="font-bold text-[#101828]">
-                                Basic Information
-                            </h4>
-                        </div>
-                        <div className="p-8 space-y-6">
-                            {/* Author Select */}
-                            <div className="space-y-2">
-                                <Label className="text-xs font-semibold text-[#344054] uppercase tracking-wider">
-                                    Author
-                                </Label>
-                                <div className="h-12 border border-[#D0D5DD] rounded-md px-3 flex items-center gap-2 bg-[#F9FAFB]">
-                                    <Avatar className="h-6 w-6">
-                                        <AvatarImage
-                                            src={
-                                                (mounted &&
-                                                    user?.profile?.avatar) ||
-                                                ""
-                                            }
-                                        />
-                                        <AvatarFallback>
-                                            {name.substring(0, 2).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <span className="text-sm font-medium text-[#101828]">
-                                        {name}
-                                    </span>
-                                </div>
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-3xl border border-[#EAECF0] shadow-sm overflow-hidden">
+                            <div className="px-8 py-5 border-b border-[#EAECF0]">
+                                <h4 className="font-bold text-[#101828]">
+                                    Logistics
+                                </h4>
                             </div>
-
-                            {/* Post Date & Time */}
-                            <div className="space-y-2">
-                                <Label className="text-xs font-semibold text-[#344054] uppercase tracking-wider">
-                                    Post Date
-                                </Label>
-                                <div className="grid grid-cols-2 gap-4">
+                            <div className="p-8 space-y-6">
+                                {/* Start Date */}
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-[#344085] uppercase tracking-wider">
+                                        Start Date & Time
+                                    </Label>
                                     <div className="relative">
                                         <Input
-                                            defaultValue="02-10-2026"
-                                            className="pl-10 h-12 border-[#D0D5DD] shadow-none focus:ring-primary/20"
+                                            type="datetime-local"
+                                            className="h-12 pl-10 border-[#D0D5DD] shadow-none focus:ring-primary/20"
+                                            value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)}
                                         />
                                         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
                                     </div>
+                                </div>
+
+                                {/* End Date */}
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-[#344085] uppercase tracking-wider">
+                                        End Date & Time (Optional)
+                                    </Label>
                                     <div className="relative">
                                         <Input
-                                            defaultValue="16:00"
-                                            className="pl-10 h-12 border-[#D0D5DD] shadow-none focus:ring-primary/20"
+                                            type="datetime-local"
+                                            className="h-12 pl-10 border-[#D0D5DD] shadow-none focus:ring-primary/20"
+                                            value={endDate}
+                                            onChange={(e) => setEndDate(e.target.value)}
                                         />
-                                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
+                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Category Select */}
-                            <div className="space-y-2">
-                                <Label className="text-xs font-semibold text-[#344054] uppercase tracking-wider">
-                                    Category
-                                </Label>
-                                <Select
-                                    value={categoryId}
-                                    onValueChange={setCategoryId}
-                                >
-                                    <SelectTrigger className="h-12 border-[#D0D5DD] shadow-none focus:ring-primary/20">
-                                        <SelectValue placeholder="Select Category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {categories.map((cat) => (
-                                            <SelectItem
-                                                key={cat.id}
-                                                value={cat.id}
-                                            >
-                                                {cat.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Tags Input */}
-                            <div className="space-y-2">
-                                <Label className="text-xs font-semibold text-[#344054] uppercase tracking-wider">
-                                    Tag
-                                </Label>
-                                <div className="min-h-12 p-2 bg-white border border-[#D0D5DD] rounded-xl flex flex-wrap gap-2 items-center">
-                                    <Badge
-                                        variant="outline"
-                                        className="bg-[#F9FAFB] border-[#EAECF0] hover:bg-white text-[#344054] px-2 py-1 flex items-center gap-1"
+                                {/* Category */}
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-[#344085] uppercase tracking-wider">
+                                        Category
+                                    </Label>
+                                    <Select
+                                        value={categoryId}
+                                        onValueChange={setCategoryId}
                                     >
-                                        Vaccination{" "}
-                                        <X className="h-3 w-3 cursor-pointer" />
-                                    </Badge>
-                                    <Plus className="h-4 w-4 text-[#667085] cursor-pointer ml-1" />
+                                        <SelectTrigger className="h-12 border-[#D0D5DD] shadow-none focus:ring-primary/20">
+                                            <SelectValue placeholder="Select Category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {categories.map((cat) => (
+                                                <SelectItem
+                                                    key={cat.id}
+                                                    value={cat.id}
+                                                >
+                                                    {cat.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-3xl border border-[#EAECF0] shadow-sm overflow-hidden">
+                            <div className="px-8 py-5 border-b border-[#EAECF0]">
+                                <h4 className="font-bold text-[#101828]">
+                                    Settings
+                                </h4>
+                            </div>
+                            <div className="p-8 space-y-6">
+                                {/* Slots */}
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-[#344085] uppercase tracking-wider">
+                                        Total Slots
+                                    </Label>
+                                    <div className="relative">
+                                        <Input
+                                            type="number"
+                                            className="h-12 pl-10 border-[#D0D5DD] shadow-none focus:ring-primary/20"
+                                            value={slots}
+                                            onChange={(e) => setSlots(Number(e.target.value))}
+                                        />
+                                        <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
+                                    </div>
+                                </div>
+
+                                {/* Amount */}
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-[#344085] uppercase tracking-wider">
+                                        Pricing (0 for free)
+                                    </Label>
+                                    <div className="relative">
+                                        <Input
+                                            type="number"
+                                            className="h-12 pl-10 border-[#D0D5DD] shadow-none focus:ring-primary/20"
+                                            value={amount}
+                                            onChange={(e) => setAmount(e.target.value)}
+                                        />
+                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
+                                    </div>
+                                </div>
+
+                                {/* Status */}
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-[#344085] uppercase tracking-wider">
+                                        Public Status
+                                    </Label>
+                                    <Select
+                                        value={status}
+                                        onValueChange={setStatus}
+                                    >
+                                        <SelectTrigger className="h-12 border-[#D0D5DD] shadow-none focus:ring-primary/20">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="upcoming">Upcoming</SelectItem>
+                                            <SelectItem value="ongoing">Ongoing</SelectItem>
+                                            <SelectItem value="completed">Completed</SelectItem>
+                                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
                         </div>

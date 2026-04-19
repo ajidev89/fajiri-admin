@@ -13,3 +13,7 @@ export { initiativeService } from "./initiatives";
 export { insuranceService } from "./insurances";
 export { countryService } from "./countries";
 export { needService } from "./needs";
+export { blogService, type BlogPost } from "./blog";
+export { categoryService, type Category } from "./categories";
+export { eventService, type Event } from "./events";
+export { partnerService, type Partner } from "./partners";
