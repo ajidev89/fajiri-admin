@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Search, Bell, Menu } from "lucide-react";
+import { Search, Menu } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { usersService } from "@/services/users";
 import * as React from "react";
@@ -76,11 +76,6 @@ export function Navbar() {
 
                 {/* Icons */}
                 <div className="flex items-center gap-2 sm:gap-4">
-                    <button className="p-2 text-[#667085] hover:bg-[#F9FAFB] rounded-full transition-colors relative">
-                        <Bell className="h-5 w-5" />
-                        <span className="absolute top-2 right-2 w-2 h-2 bg-[#F04438] rounded-full border-2 border-white"></span>
-                    </button>
-
                     {/* User Profile */}
                     <div className="flex items-center gap-3 sm:pl-4 sm:border-l border-[#E9EEF2]">
                         <div className="text-right hidden sm:block">

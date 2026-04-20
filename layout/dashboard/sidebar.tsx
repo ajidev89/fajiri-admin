@@ -42,7 +42,6 @@ const sidebarItems = [
         href: "/dashboard/reports",
     },
     { label: "Disbursements", icon: Receipt, href: "/dashboard/disbursements" },
-    { label: "Audit Logs", icon: ScrollText, href: "/dashboard/audit-logs" },
 ];
 
 const bottomSidebarItems = [

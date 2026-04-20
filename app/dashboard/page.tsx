@@ -163,7 +163,10 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Stats Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className={cn(
+                    "grid grid-cols-1 md:grid-cols-2 gap-6",
+                    isFundraiser ? "lg:grid-cols-3" : "lg:grid-cols-4"
+                )}>
                     {stats.map((stat, index) => (
                         <div
                             key={index}
