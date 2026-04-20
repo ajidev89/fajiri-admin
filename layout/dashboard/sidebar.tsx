@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -16,6 +17,7 @@ import {
     LogOut,
     HeartHandshake,
     CreditCard,
+    Library,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Cookies from "js-cookie";
@@ -60,8 +62,25 @@ import { useEffect } from "react";
 export function Sidebar() {
     const pathname = usePathname();
     const router = useRouter();
+    const { user } = useAuthStore();
     const { isOpen, setIsOpen } = useSidebar();
     const clearAuthData = useAuthStore((state) => state.clearAuthData);
+
+    const isFundraiser = user?.role.slug === "fundraiser";
+
+    const filteredSidebarItems = React.useMemo(() => {
+        if (!isFundraiser) return sidebarItems;
+        return sidebarItems.filter((item) =>
+            ["Dashboard", "Campaigns", "Needs"].includes(item.label),
+        );
+    }, [isFundraiser]);
+
+    const filteredBottomItems = React.useMemo(() => {
+        if (!isFundraiser) return bottomSidebarItems;
+        return bottomSidebarItems.filter((item) =>
+            ["Settings", "Logout"].includes(item.label),
+        );
+    }, [isFundraiser]);
 
     const logoutMutation = useMutation({
         mutationFn: () => authService.logout(),
@@ -112,7 +131,7 @@ export function Sidebar() {
 
             {/* Navigation Items */}
             <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
-                {sidebarItems.map((item) => {
+                {filteredSidebarItems.map((item) => {
                     const isActive =
                         pathname === item.href ||
                         (item.href !== "/dashboard" &&
@@ -147,7 +166,7 @@ export function Sidebar() {
 
             {/* Bottom Section */}
             <div className="p-4 border-t border-[#E9EEF2] space-y-2">
-                {bottomSidebarItems.map((item) => {
+                {filteredBottomItems.map((item) => {
                     const isActive = pathname === item.href;
                     if (item.label === "Logout") {
                         return (

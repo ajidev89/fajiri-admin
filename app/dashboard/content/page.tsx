@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { MoreHorizontal, Plus, Search } from "lucide-react";
+import { MediaLibrary } from "@/components/dashboard/content/media-library";
 
 import {
     DropdownMenu,
@@ -489,30 +490,12 @@ export default function ContentManagementPage() {
 
                 {/* Tabs Section */}
                 <Tabs defaultValue="blog" className="w-full">
-                    <TabsList className="h-auto bg-transparent p-0 gap-8 justify-start border-b border-[#EAECF0] w-full rounded-none">
+                    <TabsList className="h-auto bg-transparent p-0 gap-8 justify-start border-b border-[#EAECF0] w-full rounded-none overflow-x-auto scrollbar-hide">
                         <TabsTrigger
                             value="blog"
                             className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
                         >
                             Blog Posts
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="news"
-                            className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
-                        >
-                            News
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="testimonial"
-                            className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
-                        >
-                            Testimonial
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="faq"
-                            className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
-                        >
-                            FAQs
                         </TabsTrigger>
                         <TabsTrigger
                             value="events"
@@ -561,26 +544,7 @@ export default function ContentManagementPage() {
                         />
                     </TabsContent>
 
-                    <TabsContent
-                        value="news"
-                        className="mt-8 h-64 flex items-center justify-center text-[#667085] focus-visible:ring-0"
-                    >
-                        No news articles available.
-                    </TabsContent>
 
-                    <TabsContent
-                        value="testimonial"
-                        className="mt-8 h-64 flex items-center justify-center text-[#667085] focus-visible:ring-0"
-                    >
-                        No testimonials recorded.
-                    </TabsContent>
-
-                    <TabsContent
-                        value="faq"
-                        className="mt-8 h-64 flex items-center justify-center text-[#667085] focus-visible:ring-0"
-                    >
-                        No FAQs available.
-                    </TabsContent>
 
                     <TabsContent
                         value="events"
@@ -634,6 +598,13 @@ export default function ContentManagementPage() {
                             title="Partners Table"
                             isLoading={isLoading}
                         />
+                    </TabsContent>
+
+                    <TabsContent
+                        value="media"
+                        className="mt-8 focus-visible:ring-0"
+                    >
+                        <MediaLibrary />
                     </TabsContent>
                 </Tabs>
             </div>

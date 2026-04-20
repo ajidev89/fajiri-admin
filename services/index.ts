@@ -18,3 +18,5 @@ export { categoryService, type Category } from "./categories";
 export { eventService, type Event } from "./events";
 export { partnerService, type Partner } from "./partners";
 export { disbursementService, type Disbursement } from "./disbursements";
+export * from "./fundraisers";
+export * from "./media";

@@ -23,6 +23,17 @@ export interface CreateUpdatePinPayload {
   current_pin?: string;
 }
 
+export interface UpdateProfilePayload {
+  first_name: string;
+  last_name: string;
+  middle_name?: string | null;
+  dob?: string | null;
+  gender?: string | null;
+  address?: string | null;
+  occupation?: string | null;
+  phone?: string | null;
+}
+
 export const userService = {
   getUser() {
     return apiClient.get<ApiResponse<UserWithWallet>>("/user");
@@ -32,6 +43,10 @@ export const userService = {
     const formData = new FormData();
     formData.append("avatar", file);
     return apiClient.postFormData<ApiResponse<{ avatar_url: string }>>("/user/avatar", formData);
+  },
+
+  updateProfile(payload: UpdateProfilePayload) {
+    return apiClient.put<ApiResponse<User>>("/user/profile", payload);
   },
 
   changePassword(payload: ChangeUserPasswordPayload) {

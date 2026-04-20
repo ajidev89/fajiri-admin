@@ -88,35 +88,60 @@ export const apiClient = {
         return handleResponse<T>(response);
     },
 
-    async post<T>(endpoint: string, body?: object): Promise<T> {
+    async post<T>(
+        endpoint: string,
+        body?: any,
+        options?: { headers?: Record<string, string> },
+    ): Promise<T> {
+        const isFormData = body instanceof FormData;
+        const headers: any = {
+            ...authHeaders(),
+            ...options?.headers,
+        };
+
+        if (!isFormData && body && !headers["Content-Type"]) {
+            headers["Content-Type"] = "application/json";
+        }
+
+        if (isFormData) {
+            delete headers["Content-Type"];
+        }
+
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: "POST",
-            headers: {
-                ...authHeaders(),
-                "Content-Type": "application/json",
-            },
-            body: body ? JSON.stringify(body) : undefined,
+            headers,
+            body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
         });
         return handleResponse<T>(response);
     },
 
     async postFormData<T>(endpoint: string, formData: FormData): Promise<T> {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            method: "POST",
-            headers: authHeaders(),
-            body: formData,
-        });
-        return handleResponse<T>(response);
+        return this.post<T>(endpoint, formData);
     },
 
-    async put<T>(endpoint: string, body?: object): Promise<T> {
+    async put<T>(
+        endpoint: string,
+        body?: any,
+        options?: { headers?: Record<string, string> },
+    ): Promise<T> {
+        const isFormData = body instanceof FormData;
+        const headers: any = {
+            ...authHeaders(),
+            ...options?.headers,
+        };
+
+        if (!isFormData && body && !headers["Content-Type"]) {
+            headers["Content-Type"] = "application/json";
+        }
+
+        if (isFormData) {
+            delete headers["Content-Type"];
+        }
+
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: "PUT",
-            headers: {
-                ...authHeaders(),
-                "Content-Type": "application/json",
-            },
-            body: body ? JSON.stringify(body) : undefined,
+            headers,
+            body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
         });
         return handleResponse<T>(response);
     },
