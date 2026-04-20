@@ -74,10 +74,10 @@ export function DataTable<TData, TValue>({
     return (
         <div className="bg-white rounded-2xl border border-[#EAECF0] shadow-sm overflow-hidden auto-cols-auto">
             {/* Table Header/Toolbar */}
-            <div className="p-6 border-b border-[#EAECF0] flex flex-col sm:flex-row items-center justify-between gap-4">
-                {title && <h2 className="text-lg font-bold text-[#101828]">{title}</h2>}
+            <div className="p-4 sm:p-6 border-b border-[#EAECF0] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                {title && <h2 className="text-base sm:text-lg font-bold text-[#101828]">{title}</h2>}
                 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
                     {searchKey && (
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
@@ -91,35 +91,37 @@ export function DataTable<TData, TValue>({
                             />
                         </div>
                     )}
-                    <Button variant="outline" className="h-10 border-[#EAECF0] text-[#344054] font-medium gap-2">
-                        <Filter className="h-4 w-4" /> Filter
-                    </Button>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="h-10 border-[#EAECF0] text-[#344054] font-medium gap-2 hidden lg:flex">
-                                <ArrowUpDown className="h-4 w-4" /> Sort by
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[150px] bg-white">
-                            <DropdownMenuItem onClick={() => setSorting([{ id: searchKey || "id", desc: false }])} className="cursor-pointer">
-                                Ascending
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setSorting([{ id: searchKey || "id", desc: true }])} className="cursor-pointer">
-                                Descending
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Button variant="outline" className="h-10 flex-1 sm:flex-none border-[#EAECF0] text-[#344054] font-medium gap-2">
+                            <Filter className="h-4 w-4" /> Filter
+                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="h-10 flex-1 sm:flex-none border-[#EAECF0] text-[#344054] font-medium gap-2 hidden sm:flex">
+                                    <ArrowUpDown className="h-4 w-4" /> Sort by
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-[150px] bg-white">
+                                <DropdownMenuItem onClick={() => setSorting([{ id: searchKey || "id", desc: false }])} className="cursor-pointer">
+                                    Ascending
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSorting([{ id: searchKey || "id", desc: true }])} className="cursor-pointer">
+                                    Descending
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
             </div>
 
             {/* Table Content */}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto scrollbar-hide">
                 <Table className="min-w-full">
                     <TableHeader className="bg-[#F9FAFB]">
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id} className="text-xs font-semibold text-[#475467] py-4 h-auto uppercase tracking-wider">
+                                    <TableHead key={header.id} className="text-xs font-semibold text-[#475467] py-3 sm:py-4 h-auto uppercase tracking-wider whitespace-nowrap">
                                         {header.isPlaceholder
                                             ? null
                                             : flexRender(
@@ -149,7 +151,7 @@ export function DataTable<TData, TValue>({
                                     className="hover:bg-[#F9FAFB] border-[#EAECF0]"
                                 >
                                     {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id} className="py-4 text-sm text-[#101828]">
+                                        <TableCell key={cell.id} className="py-3 sm:py-4 px-3 sm:px-4 text-sm text-[#101828]">
                                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                         </TableCell>
                                     ))}
@@ -167,24 +169,25 @@ export function DataTable<TData, TValue>({
             </div>
 
             {/* Table Pagination */}
-            <div className="p-4 border-t border-[#EAECF0] flex items-center justify-between gap-4">
-                <div className="flex-1 text-sm text-[#475467]">
+            <div className="p-4 border-t border-[#EAECF0] flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex-1 text-sm text-[#475467] order-2 sm:order-1">
                    <span className="font-medium text-[#101828]">Page {table.getState().pagination.pageIndex + 1}</span> of{" "}
                    <span className="font-medium text-[#101828]">{table.getPageCount()}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 order-1 sm:order-2 w-full sm:w-auto justify-between sm:justify-end">
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}
-                        className="text-[#344054] hover:bg-[#F9FAFB]"
+                        className="text-[#344054] hover:bg-[#F9FAFB] h-10 px-3"
                     >
-                        <ChevronLeft className="h-4 w-4 mr-2" /> Previous
+                        <ChevronLeft className="h-4 w-4 sm:mr-2" /> 
+                        <span className="hidden sm:inline">Previous</span>
                     </Button>
                     
-                    {/* Page Numbers - Simplified for now */}
-                    <div className="flex items-center gap-1 mx-2">
+                    {/* Page Numbers - Shown only on larger screens */}
+                    <div className="hidden md:flex items-center gap-1 mx-2">
                         {[...Array(Math.min(table.getPageCount(), 5))].map((_, i) => (
                             <Button
                                 key={i}
@@ -208,9 +211,10 @@ export function DataTable<TData, TValue>({
                         size="sm"
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
-                        className="text-[#344054] hover:bg-[#F9FAFB]"
+                        className="text-[#344054] hover:bg-[#F9FAFB] h-10 px-3"
                     >
-                        Next <ChevronRight className="h-4 w-4 ml-2" />
+                        <span className="hidden sm:inline">Next</span>
+                        <ChevronRight className="h-4 w-4 sm:ml-2" />
                     </Button>
                 </div>
             </div>

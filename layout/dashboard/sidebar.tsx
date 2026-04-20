@@ -53,9 +53,14 @@ const bottomSidebarItems = [
     { label: "Logout", icon: LogOut, href: "/logout" },
 ];
 
+import { useSidebar } from "@/layout/dashboard/index";
+import { X } from "lucide-react";
+import { useEffect } from "react";
+
 export function Sidebar() {
     const pathname = usePathname();
     const router = useRouter();
+    const { isOpen, setIsOpen } = useSidebar();
     const clearAuthData = useAuthStore((state) => state.clearAuthData);
 
     const logoutMutation = useMutation({
@@ -73,19 +78,36 @@ export function Sidebar() {
         logoutMutation.mutate();
     };
 
+    // Close sidebar on navigation (mobile)
+    useEffect(() => {
+        setIsOpen(false);
+    }, [pathname, setIsOpen]);
+
     return (
-        <aside className="fixed left-0 top-0 h-screen w-64 border-r border-[#E9EEF2] bg-white flex flex-col z-50">
+        <aside
+            className={cn(
+                "fixed left-0 top-0 h-screen w-64 border-r border-[#E9EEF2] bg-white flex flex-col z-50 transition-transform duration-300 transform lg:translate-x-0",
+                isOpen ? "translate-x-0" : "-translate-x-full",
+            )}
+        >
             {/* Logo Section */}
-            <div className="p-6 border-b border-[#E9EEF2] h-20 flex items-center">
+            <div className="p-6 border-b border-[#E9EEF2] h-20 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Image
                         src="/logo.svg"
                         alt="Logo"
-                        className="w-[128px]"
+                        className="w-[120px] sm:w-[128px]"
                         width={128}
                         height={128}
                     />
                 </div>
+                {/* Close button for mobile */}
+                <button
+                    className="p-2 lg:hidden text-[#667085] hover:bg-[#F9FAFB] rounded-lg transition-colors"
+                    onClick={() => setIsOpen(false)}
+                >
+                    <X className="h-5 w-5" />
+                </button>
             </div>
 
             {/* Navigation Items */}

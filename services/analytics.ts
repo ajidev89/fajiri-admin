@@ -26,6 +26,22 @@ export interface TopPerformingCampaignsResponse {
     total_raised: number;
 }
 
+export interface DisbursementAnalyticsResponse {
+    available_funds_ngn: number;
+    pending_disbursements: {
+        count: number;
+        amounts: Record<string, number>;
+    };
+    approved_disbursements: {
+        count: number;
+        amounts: Record<string, number>;
+    };
+    rejected_disbursements: {
+        count: number;
+        amounts: Record<string, number>;
+    };
+}
+
 export const analyticsService = {
     getAnalytics() {
         return apiClient.get<ApiResponse<AnalyticsResponse>>(`/analytics`);
@@ -40,6 +56,12 @@ export const analyticsService = {
     getTopPerformingCampaigns() {
         return apiClient.get<ApiResponse<TopPerformingCampaignsResponse[]>>(
             `/analytics/top-performing-campaigns`,
+        );
+    },
+
+    getDisbursementStats() {
+        return apiClient.get<ApiResponse<DisbursementAnalyticsResponse>>(
+            "/analytics/disbursements",
         );
     },
 };

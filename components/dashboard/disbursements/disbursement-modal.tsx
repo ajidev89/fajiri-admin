@@ -23,10 +23,18 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { disbursementService } from "@/services/disbursements"
+import { campaignService } from "@/services/campaigns"
+import { needService } from "@/services/needs"
+import { toast } from "sonner"
+
 const disbursementSchema = z.object({
-    campaignId: z.string().min(1, "Campaign is required"),
+    type: z.enum(["campaign", "need"]),
+    disbursableId: z.string().min(1, "Source is required"),
     beneficiary: z.string().min(1, "Beneficiary name is required"),
     amount: z.string().min(1, "Amount is required"),
+    currency: z.string().min(1, "Currency is required"),
     paymentMethod: z.string().min(1, "Payment method is required"),
     accountName: z.string().min(1, "Account name is required"),
     accountNumber: z.string().min(10, "Account number must be 10 digits").max(10, "Account number must be 10 digits"),
@@ -39,12 +47,6 @@ interface DisbursementModalProps {
     isOpen: boolean
     onOpenChange: (open: boolean) => void
 }
-
-const campaigns = [
-    { id: "1", title: "The strength of a people. The power of community." },
-    { id: "2", title: "Feed 1,000 Families This Ramadan" },
-    { id: "3", title: "Build a Community Health Center" },
-]
 
 const banks = [
     "Access Bank",
@@ -60,19 +62,35 @@ export function DisbursementModal({
     isOpen,
     onOpenChange,
 }: DisbursementModalProps) {
+    const queryClient = useQueryClient()
+
+    const { data: campaignsRes } = useQuery({
+        queryKey: ["campaigns-list"],
+        queryFn: () => campaignService.listCampaigns({ status: "active" }),
+        enabled: isOpen,
+    })
+
+    const { data: needsRes } = useQuery({
+        queryKey: ["needs-list"],
+        queryFn: () => needService.getNeeds(),
+        enabled: isOpen,
+    })
+
     const {
         register,
         handleSubmit,
         setValue,
         watch,
         reset,
-        formState: { errors, isSubmitting }
+        formState: { errors }
     } = useForm<DisbursementFormValues>({
         resolver: zodResolver(disbursementSchema),
         defaultValues: {
-            campaignId: "",
+            type: "campaign",
+            disbursableId: "",
             beneficiary: "",
             amount: "",
+            currency: "NGN",
             paymentMethod: "Bank Transfer",
             accountName: "",
             accountNumber: "",
@@ -80,17 +98,52 @@ export function DisbursementModal({
         }
     })
 
-    const onSubmit = async (data: DisbursementFormValues) => {
-        console.log("Submitting disbursement request:", data)
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        onOpenChange(false)
-        reset()
-    }
-
-    const campaignValue = watch("campaignId")
+    const typeValue = watch("type")
+    const disbursableIdValue = watch("disbursableId")
     const paymentMethodValue = watch("paymentMethod")
     const bankNameValue = watch("bankName")
+    const currencyValue = watch("currency")
+
+    // Dynamically get the list based on type
+    const sourceList = React.useMemo(() => {
+        if (typeValue === "campaign") {
+            return (campaignsRes?.data || []).map(c => ({ id: c.id, title: c.title }));
+        } else {
+            return (needsRes?.data || []).map(n => ({ id: n.id, title: n.name }));
+        }
+    }, [typeValue, campaignsRes, needsRes]);
+
+    const createMutation = useMutation({
+        mutationFn: (data: DisbursementFormValues) => {
+            return disbursementService.requestDisbursement({
+                disbursable_id: data.disbursableId,
+                disbursable_type: data.type === "campaign" ? "App\\Models\\Campaign" : "App\\Models\\Need",
+                beneficiary_name: data.beneficiary,
+                amount: data.amount,
+                currency: data.currency,
+                payment_method: data.paymentMethod,
+                account_name: data.accountName,
+                account_number: data.accountNumber,
+                bank_name: data.bankName,
+            })
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["disbursements"] })
+            queryClient.invalidateQueries({ queryKey: ["disbursement-stats"] })
+            toast.success("Disbursement request submitted successfully")
+            onOpenChange(false)
+            reset()
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Failed to submit request")
+        },
+    })
+
+    const onSubmit = (data: DisbursementFormValues) => {
+        createMutation.mutate(data)
+    }
+
+    const isSubmitting = createMutation.isPending
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -102,28 +155,49 @@ export function DisbursementModal({
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
-                    {/* Campaign */}
-                    <div className="space-y-2">
-                        <Label htmlFor="campaign" className="text-sm font-medium text-[#344054]">Campaign</Label>
-                        <Select 
-                            onValueChange={(value) => setValue("campaignId", value)}
-                            value={campaignValue}
-                        >
-                            <SelectTrigger className="h-11 bg-white border-[#EAECF0]">
-                                <SelectValue placeholder="Select Campaign" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {campaigns.map((campaign) => (
-                                    <SelectItem key={campaign.id} value={campaign.id}>
-                                        {campaign.title}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        {errors.campaignId && <p className="text-xs text-red-500">{errors.campaignId.message}</p>}
+                    {/* Type & Source */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium text-[#344054]">Request Type</Label>
+                            <Select 
+                                onValueChange={(val: any) => {
+                                    setValue("type", val);
+                                    setValue("disbursableId", ""); // Reset source on type change
+                                }}
+                                value={typeValue}
+                            >
+                                <SelectTrigger className="h-11 bg-white border-[#EAECF0]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white">
+                                    <SelectItem value="campaign">Campaign</SelectItem>
+                                    <SelectItem value="need">Need</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="sm:col-span-2 space-y-2">
+                            <Label className="text-sm font-medium text-[#344054]">
+                                Select {typeValue === "campaign" ? "Campaign" : "Need"}
+                            </Label>
+                            <Select 
+                                onValueChange={(value) => setValue("disbursableId", value)}
+                                value={disbursableIdValue}
+                            >
+                                <SelectTrigger className="h-11 bg-white border-[#EAECF0]">
+                                    <SelectValue placeholder={`Select ${typeValue}`} />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white">
+                                    {sourceList.map((item) => (
+                                        <SelectItem key={item.id} value={item.id}>
+                                            {item.title}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {errors.disbursableId && <p className="text-xs text-red-500">{errors.disbursableId.message}</p>}
+                        </div>
                     </div>
 
-                    {/* Beneficiary & Amount */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="beneficiary" className="text-sm font-medium text-[#344054]">Beneficiary</Label>
@@ -131,22 +205,37 @@ export function DisbursementModal({
                                 id="beneficiary"
                                 placeholder="Jeff Ned"
                                 {...register("beneficiary")}
-                                className="h-11 bg-white border-[#EAECF0]"
+                                className={cn("h-11 bg-white border-[#EAECF0]", errors.beneficiary && "border-red-500")}
                             />
                             {errors.beneficiary && <p className="text-xs text-red-500">{errors.beneficiary.message}</p>}
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="amount" className="text-sm font-medium text-[#344054]">Amount</Label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#667085]">₦</span>
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="currency" className="text-sm font-medium text-[#344054]">Currency</Label>
+                                <Select 
+                                    onValueChange={(val) => setValue("currency", val)}
+                                    value={currencyValue}
+                                >
+                                    <SelectTrigger className="h-11 bg-white border-[#EAECF0]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white">
+                                        <SelectItem value="NGN">NGN</SelectItem>
+                                        <SelectItem value="USD">USD</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="col-span-2 space-y-2">
+                                <Label htmlFor="amount" className="text-sm font-medium text-[#344054]">Amount</Label>
                                 <Input 
                                     id="amount"
-                                    placeholder="500,000"
+                                    type="number"
+                                    placeholder="500000"
                                     {...register("amount")}
-                                    className="h-11 pl-8 bg-white border-[#EAECF0]"
+                                    className={cn("h-11 bg-white border-[#EAECF0]", errors.amount && "border-red-500")}
                                 />
+                                {errors.amount && <p className="text-xs text-red-500">{errors.amount.message}</p>}
                             </div>
-                            {errors.amount && <p className="text-xs text-red-500">{errors.amount.message}</p>}
                         </div>
                     </div>
 
@@ -160,10 +249,9 @@ export function DisbursementModal({
                             <SelectTrigger className="h-11 bg-white border-[#EAECF0]">
                                 <SelectValue placeholder="Select Payment Method" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-white">
                                 <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
                                 <SelectItem value="Wallet Transfer">Wallet Transfer</SelectItem>
-                                <SelectItem value="Card Payment">Card Payment</SelectItem>
                             </SelectContent>
                         </Select>
                         {errors.paymentMethod && <p className="text-xs text-red-500">{errors.paymentMethod.message}</p>}
@@ -177,7 +265,7 @@ export function DisbursementModal({
                                 id="accountName"
                                 placeholder="Jeff Ned"
                                 {...register("accountName")}
-                                className="h-11 bg-white border-[#EAECF0]"
+                                className={cn("h-11 bg-white border-[#EAECF0]", errors.accountName && "border-red-500")}
                             />
                             {errors.accountName && <p className="text-xs text-red-500">{errors.accountName.message}</p>}
                         </div>
@@ -187,7 +275,7 @@ export function DisbursementModal({
                                 id="accountNumber"
                                 placeholder="1887131447"
                                 {...register("accountNumber")}
-                                className="h-11 bg-white border-[#EAECF0]"
+                                className={cn("h-11 bg-white border-[#EAECF0]", errors.accountNumber && "border-red-500")}
                             />
                             {errors.accountNumber && <p className="text-xs text-red-500">{errors.accountNumber.message}</p>}
                         </div>
@@ -203,7 +291,7 @@ export function DisbursementModal({
                             <SelectTrigger className="h-11 bg-white border-[#EAECF0]">
                                 <SelectValue placeholder="Select Bank" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-white">
                                 {banks.map((bank) => (
                                     <SelectItem key={bank} value={bank}>
                                         {bank}
@@ -227,9 +315,9 @@ export function DisbursementModal({
                         <Button 
                             type="submit" 
                             disabled={isSubmitting}
-                            className="w-full sm:w-[120px] h-11 bg-[#0E3B5D] hover:bg-[#0E3B5D]/90 text-white font-semibold rounded-lg"
+                            className="w-full sm:w-[150px] h-11 bg-[#0E3B5D] hover:bg-[#0E3B5D]/90 text-white font-semibold rounded-lg"
                         >
-                            Submit
+                            {isSubmitting ? "Submitting..." : "Submit Request"}
                         </Button>
                     </div>
                 </form>

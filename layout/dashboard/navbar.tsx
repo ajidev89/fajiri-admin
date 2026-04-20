@@ -1,15 +1,16 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Search, Bell, ChevronDown } from "lucide-react";
+import { Search, Bell, Menu } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { usersService } from "@/services/users";
 import * as React from "react";
 import { useAuthStore } from "@/store/auth-store";
+import { useSidebar } from "@/layout/dashboard/index";
 
 export function Navbar() {
     const pathname = usePathname();
-
+    const { toggle } = useSidebar();
     const { user } = useAuthStore();
 
     // Simple logic to get page title from pathname
@@ -49,14 +50,22 @@ export function Navbar() {
     }, [pathname, userId, userRes]);
 
     return (
-        <header className="h-20 border-b border-[#E9EEF2] bg-white flex items-center justify-between px-8 sticky top-0 z-40">
-            <h1 className="text-xl font-bold text-[#101828] capitalize">
-                {title}
-            </h1>
+        <header className="h-20 border-b border-[#E9EEF2] bg-white flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-40">
+            <div className="flex items-center gap-4">
+                <button 
+                    className="p-2 lg:hidden text-[#667085] hover:bg-[#F9FAFB] rounded-lg transition-colors"
+                    onClick={toggle}
+                >
+                    <Menu className="h-6 w-6" />
+                </button>
+                <h1 className="text-lg sm:text-xl font-bold text-[#101828] capitalize truncate max-w-[150px] sm:max-w-none">
+                    {title}
+                </h1>
+            </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 sm:gap-6">
                 {/* Search Bar */}
-                <div className="relative hidden md:block w-72">
+                <div className="relative hidden md:block w-48 lg:w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
                     <input
                         type="text"
@@ -66,14 +75,14 @@ export function Navbar() {
                 </div>
 
                 {/* Icons */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                     <button className="p-2 text-[#667085] hover:bg-[#F9FAFB] rounded-full transition-colors relative">
                         <Bell className="h-5 w-5" />
                         <span className="absolute top-2 right-2 w-2 h-2 bg-[#F04438] rounded-full border-2 border-white"></span>
                     </button>
 
                     {/* User Profile */}
-                    <div className="flex items-center gap-3 pl-4 border-l border-[#E9EEF2]">
+                    <div className="flex items-center gap-3 sm:pl-4 sm:border-l border-[#E9EEF2]">
                         <div className="text-right hidden sm:block">
                             <p className="text-sm font-semibold text-[#101828]">
                                 {user?.profile?.first_name}{" "}
@@ -83,15 +92,14 @@ export function Navbar() {
                                 {user?.role.name}
                             </p>
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center border border-[#EAECF0]">
-                            <span className="text-sm font-semibold text-[#475467]">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center border border-[#EAECF0] shrink-0">
+                            <span className="text-xs sm:text-sm font-semibold text-[#475467]">
                                 {user?.profile?.first_name &&
                                 user?.profile?.last_name
                                     ? `${user.profile.first_name.charAt(0)}${user.profile.last_name.charAt(0)}`.toUpperCase()
                                     : "SA"}
                             </span>
                         </div>
-                        {/* <ChevronDown className="h-4 w-4 text-[#667085] cursor-pointer" /> */}
                     </div>
                 </div>
             </div>

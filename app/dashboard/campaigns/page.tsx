@@ -164,25 +164,24 @@ export default function CampaignsPage() {
         <DashboardLayout>
             <div className="space-y-8">
                 {/* Header Section */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2 sm:mt-0">
                     <div className="space-y-1">
-                        <h2 className="text-2xl font-bold text-[#101828]">
+                        <h2 className="text-xl sm:text-2xl font-bold text-[#101828]">
                             All Campaigns
                         </h2>
-                        <p className="text-sm text-[#475467]">
-                            Manage and monitor all donation campaigns in the
-                            system.
+                        <p className="text-xs sm:text-sm text-[#475467]">
+                            Manage and monitor all donation campaigns in the system.
                         </p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                         <Button
                             variant="outline"
-                            className="border-[#EAECF0] text-[#344054] font-semibold"
+                            className="border-[#EAECF0] text-[#344054] font-semibold h-11 sm:h-10 flex items-center justify-center"
                         >
                             Export Data
                         </Button>
                         <Button
-                            className="bg-primary hover:bg-primary/90 text-white font-semibold gap-2"
+                            className="bg-primary hover:bg-primary/90 text-white font-semibold gap-2 h-11 sm:h-10 flex items-center justify-center"
                             onClick={handleCreate}
                         >
                             <Plus className="h-4 w-4" /> Create Campaign
