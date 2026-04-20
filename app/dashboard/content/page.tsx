@@ -27,9 +27,16 @@ import {
     type Event,
     partnerService,
     type Partner,
+    initiativeService,
+    type Initiative,
+    insuranceService,
+    type Insurance,
 } from "@/services";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { InitiativeModal } from "@/components/dashboard/content/initiatives/initiative-modal";
+import { InsuranceModal } from "@/components/dashboard/content/insurances/insurance-modal";
+import { useAuthStore } from "@/store/auth-store";
 
 // Mock data removed in favor of API
 
@@ -397,23 +404,244 @@ const getPartnerColumns = (
     },
 ];
 
+const getInitiativeColumns = (
+    onEdit: (initiative: Initiative) => void,
+    onDelete: (id: string) => void,
+): ColumnDef<Initiative>[] => [
+    {
+        id: "select",
+        header: ({ table }) => (
+            <Checkbox
+                checked={table.getIsAllPageRowsSelected()}
+                onCheckedChange={(value) =>
+                    table.toggleAllPageRowsSelected(!!value)
+                }
+                aria-label="Select all"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={(value) => row.toggleSelected(!!value)}
+                aria-label="Select row"
+            />
+        ),
+    },
+    {
+        accessorKey: "image",
+        header: "Image",
+        cell: ({ row }) => (
+            <Avatar className="h-10 w-10 rounded-lg border border-[#EAECF0]">
+                <AvatarImage
+                    src={row.original.image || ""}
+                    className="object-cover"
+                />
+                <AvatarFallback className="rounded-lg bg-[#F9FAFB] text-xs">
+                    {row.original.title.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+            </Avatar>
+        ),
+    },
+    {
+        accessorKey: "title",
+        header: "Title",
+        cell: ({ row }) => (
+            <div className="font-medium text-[#101828] max-w-[200px] truncate">
+                {row.getValue("title")}
+            </div>
+        ),
+    },
+    {
+        accessorKey: "description",
+        header: "Description",
+        cell: ({ row }) => (
+            <div className="text-sm text-[#475467] max-w-[300px] truncate">
+                {row.getValue("description")}
+            </div>
+        ),
+    },
+    {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => {
+            const status = row.getValue("status") as string;
+            return (
+                <Badge
+                    variant={status === "active" ? "success" : "default"}
+                >
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                </Badge>
+            );
+        },
+    },
+    {
+        accessorKey: "created_at",
+        header: "Date Created",
+        cell: ({ row }) =>
+            format(new Date(row.original.created_at), "MMM dd, yyyy"),
+    },
+    {
+        id: "actions",
+        cell: ({ row }) => (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-[#667085]"
+                    >
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEdit(row.original)}>
+                        Edit Initiative
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => onDelete(row.original.id)}
+                    >
+                        Delete Initiative
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        ),
+    },
+];
+
+const getInsuranceColumns = (
+    onEdit: (insurance: Insurance) => void,
+    onDelete: (id: string) => void,
+): ColumnDef<Insurance>[] => [
+    {
+        accessorKey: "logo",
+        header: "Logo",
+        cell: ({ row }) => (
+            <Avatar className="h-10 w-10 rounded-lg border border-[#EAECF0] bg-white">
+                <AvatarImage
+                    src={row.original.logo || ""}
+                    className="object-contain p-1"
+                />
+                <AvatarFallback className="rounded-lg bg-[#F9FAFB] text-xs">
+                    {row.original.name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+            </Avatar>
+        ),
+    },
+    {
+        accessorKey: "name",
+        header: "Company Name",
+        cell: ({ row }) => (
+            <div className="font-semibold text-[#101828]">
+                {row.getValue("name")}
+            </div>
+        ),
+    },
+    {
+        accessorKey: "type",
+        header: "Type",
+        cell: ({ row }) => (
+            <Badge variant="outline" className="capitalize">
+                {row.getValue("type")}
+            </Badge>
+        ),
+    },
+    {
+        accessorKey: "email",
+        header: "Contact",
+        cell: ({ row }) => (
+            <div className="text-sm text-[#475467]">
+                {row.original.email}
+            </div>
+        ),
+    },
+    {
+        accessorKey: "country",
+        header: "Country",
+        cell: ({ row }) => (
+            <div className="flex items-center gap-2">
+                <span>{row.original.country?.name}</span>
+            </div>
+        ),
+    },
+    {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => {
+            const status = row.getValue("status") as string;
+            return (
+                <Badge
+                    variant={status === "active" ? "success" : "default"}
+                >
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                </Badge>
+            );
+        },
+    },
+    {
+        id: "actions",
+        cell: ({ row }) => (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-[#667085]"
+                    >
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEdit(row.original)}>
+                        Edit Provider
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => onDelete(row.original.id)}
+                    >
+                        Delete Provider
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        ),
+    },
+];
+
 export default function ContentManagementPage() {
+    const { user } = useAuthStore();
     const [posts, setPosts] = React.useState<BlogPost[]>([]);
     const [events, setEvents] = React.useState<Event[]>([]);
     const [partners, setPartners] = React.useState<Partner[]>([]);
+    const [initiatives, setInitiatives] = React.useState<Initiative[]>([]);
+    const [insurances, setInsurances] = React.useState<Insurance[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
+    
+    // Initiative Modal state
+    const [isInitiativeModalOpen, setIsInitiativeModalOpen] = React.useState(false);
+    const [selectedInitiative, setSelectedInitiative] = React.useState<Initiative | null>(null);
+
+    // Insurance Modal state
+    const [isInsuranceModalOpen, setIsInsuranceModalOpen] = React.useState(false);
+    const [selectedInsurance, setSelectedInsurance] = React.useState<Insurance | null>(null);
 
     const fetchData = React.useCallback(async () => {
         setIsLoading(true);
         try {
-            const [postsRes, eventsRes, partnersRes] = await Promise.all([
-                blogService.getPosts(),
-                eventService.getEvents(),
-                partnerService.getPartners(),
+            const isFundraiser = user?.role.slug === "fundraiser";
+            const params = isFundraiser ? { added_by: user?.id } : { all: "true" };
+
+            const [postsRes, eventsRes, partnersRes, initiativesRes, insurancesRes] = await Promise.all([
+                blogService.getPosts(params),
+                eventService.getEvents(params),
+                partnerService.getPartners(params),
+                initiativeService.getInitiatives(params),
+                insuranceService.getInsurances({ all: "true" }),
             ]);
             setPosts(postsRes.data);
             setEvents(eventsRes.data);
             setPartners(partnersRes.data);
+            setInitiatives(initiativesRes.data);
+            setInsurances(insurancesRes.data);
         } catch (error: any) {
             toast.error(error.message || "Failed to fetch content data");
         } finally {
@@ -461,6 +689,50 @@ export default function ContentManagementPage() {
         }
     };
 
+    const handleDeleteInitiative = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this initiative?")) return;
+
+        try {
+            await initiativeService.deleteInitiative(id);
+            toast.success("Initiative deleted successfully");
+            fetchData();
+        } catch (error: any) {
+            toast.error(error.message || "Failed to delete initiative");
+        }
+    };
+
+    const handleEditInitiative = (initiative: Initiative) => {
+        setSelectedInitiative(initiative);
+        setIsInitiativeModalOpen(true);
+    };
+
+    const handleCreateInitiative = () => {
+        setSelectedInitiative(null);
+        setIsInitiativeModalOpen(true);
+    };
+
+    const handleDeleteInsurance = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this insurance provider?")) return;
+
+        try {
+            await insuranceService.deleteInsurance(id);
+            toast.success("Insurance provider deleted successfully");
+            fetchData();
+        } catch (error: any) {
+            toast.error(error.message || "Failed to delete insurance provider");
+        }
+    };
+
+    const handleEditInsurance = (insurance: Insurance) => {
+        setSelectedInsurance(insurance);
+        setIsInsuranceModalOpen(true);
+    };
+
+    const handleCreateInsurance = () => {
+        setSelectedInsurance(null);
+        setIsInsuranceModalOpen(true);
+    };
+
     const columns = React.useMemo(
         () => getColumns(handleDeletePost),
         [handleDeletePost],
@@ -472,6 +744,14 @@ export default function ContentManagementPage() {
     const partnerColumns = React.useMemo(
         () => getPartnerColumns(handleDeletePartner),
         [handleDeletePartner],
+    );
+    const initiativeColumns = React.useMemo(
+        () => getInitiativeColumns(handleEditInitiative, handleDeleteInitiative),
+        [handleEditInitiative, handleDeleteInitiative],
+    );
+    const insuranceColumns = React.useMemo(
+        () => getInsuranceColumns(handleEditInsurance, handleDeleteInsurance),
+        [handleEditInsurance, handleDeleteInsurance],
     );
     return (
         <DashboardLayout>
@@ -505,9 +785,21 @@ export default function ContentManagementPage() {
                         </TabsTrigger>
                         <TabsTrigger
                             value="partners"
-                            className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
+                            className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
                         >
                             Partners
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="initiatives"
+                            className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
+                        >
+                            Initiatives
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="insurances"
+                            className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
+                        >
+                            Insurance
                         </TabsTrigger>
                         <TabsTrigger
                             value="media"
@@ -606,7 +898,69 @@ export default function ContentManagementPage() {
                     >
                         <MediaLibrary />
                     </TabsContent>
+
+                    <TabsContent
+                        value="initiatives"
+                        className="mt-8 space-y-6 focus-visible:ring-0"
+                    >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <h3 className="text-xl font-bold text-[#101828]">
+                                Initiatives
+                            </h3>
+                            <Button
+                                onClick={handleCreateInitiative}
+                                className="bg-primary hover:bg-primary/90 text-white font-semibold flex items-center gap-2"
+                            >
+                                <Plus className="h-4 w-4" /> New Initiative
+                            </Button>
+                        </div>
+
+                        <DataTable
+                            columns={initiativeColumns}
+                            data={initiatives}
+                            searchKey="title"
+                            title="Initiatives Table"
+                            isLoading={isLoading}
+                        />
+                    </TabsContent>
+
+                    <TabsContent
+                        value="insurances"
+                        className="mt-8 space-y-6 focus-visible:ring-0"
+                    >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <h3 className="text-xl font-bold text-[#101828]">
+                                Insurance Providers
+                            </h3>
+                            <Button
+                                onClick={handleCreateInsurance}
+                                className="bg-primary hover:bg-primary/90 text-white font-semibold flex items-center gap-2"
+                            >
+                                <Plus className="h-4 w-4" /> Add Provider
+                            </Button>
+                        </div>
+
+                        <DataTable
+                            columns={insuranceColumns}
+                            data={insurances}
+                            searchKey="name"
+                            title="Insurance Providers Table"
+                            isLoading={isLoading}
+                        />
+                    </TabsContent>
                 </Tabs>
+
+                <InitiativeModal
+                    isOpen={isInitiativeModalOpen}
+                    onOpenChange={setIsInitiativeModalOpen}
+                    initialData={selectedInitiative}
+                />
+
+                <InsuranceModal
+                    isOpen={isInsuranceModalOpen}
+                    onOpenChange={setIsInsuranceModalOpen}
+                    initialData={selectedInsurance}
+                />
             </div>
         </DashboardLayout>
     );
