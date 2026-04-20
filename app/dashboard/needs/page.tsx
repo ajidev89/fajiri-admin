@@ -20,15 +20,18 @@ import { needService, Need } from "@/services/needs";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function NeedsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedNeed, setSelectedNeed] = useState<Need | null>(null);
     const queryClient = useQueryClient();
+    const { user } = useAuthStore();
+    const isFundraiser = user?.role.slug === "fundraiser";
 
     const { data: needsRes, isLoading } = useQuery({
-        queryKey: ["needs"],
-        queryFn: () => needService.getNeeds(),
+        queryKey: ["needs", isFundraiser ? user?.id : "all"],
+        queryFn: () => needService.getNeeds(isFundraiser ? { added_by: user?.id } : {}),
     });
 
     const deleteMutation = useMutation({

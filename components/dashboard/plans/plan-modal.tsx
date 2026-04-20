@@ -27,7 +27,7 @@ const planSchema = z.object({
     price: z.string().min(1, "Price is required"),
     currency: z.string().min(1, "Currency is required"),
     duration: z.number().min(1, "Duration is required"),
-    status: z.boolean().default(true),
+    status: z.boolean(),
     features: z.array(z.object({ value: z.string().min(1, "Feature cannot be empty") })).min(1, "At least one feature is required"),
 });
 

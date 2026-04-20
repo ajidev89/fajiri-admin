@@ -18,6 +18,7 @@ import {
 import { Button } from "../../../components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { campaignService, Campaign } from "@/services/campaigns";
+import { useAuthStore } from "@/store/auth-store";
 
 // Columns definition
 const columns: ColumnDef<Campaign>[] = [
@@ -133,10 +134,12 @@ export default function CampaignsPage() {
     const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
         null,
     );
+    const { user } = useAuthStore();
+    const isFundraiser = user?.role.slug === "fundraiser";
 
     const { data: campaignsRes, isLoading } = useQuery({
-        queryKey: ["campaigns"],
-        queryFn: () => campaignService.listCampaigns(),
+        queryKey: ["campaigns", isFundraiser ? user?.id : "all"],
+        queryFn: () => campaignService.listCampaigns(isFundraiser ? { added_by: user?.id || "" } : {}),
     });
 
     const campaigns = campaignsRes?.data || [];

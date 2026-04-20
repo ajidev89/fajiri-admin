@@ -97,7 +97,7 @@ export default function FundraiserPage() {
             header: "Campaigns",
             cell: ({ row }) => (
                 <span className="text-[#475467]">
-                    {(row.original as any).campaigns_count || row.original.campaigns?.length || 0}
+                    {row.original.campaigns_count || row.original.campaigns?.length || 0}
                 </span>
             ),
         },

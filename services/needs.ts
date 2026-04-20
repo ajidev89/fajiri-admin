@@ -38,8 +38,8 @@ export interface UpdateNeedPayload {
 }
 
 export const needService = {
-  getNeeds() {
-    return apiClient.get<ApiResponse<Need[]>>("/needs");
+  getNeeds(params?: Record<string, any>) {
+    return apiClient.get<ApiResponse<Need[]>>("/needs", params);
   },
 
   createNeed(payload: CreateNeedPayload) {

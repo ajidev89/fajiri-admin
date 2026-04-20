@@ -60,6 +60,8 @@ export interface User {
     email: string;
     email_verified_at: string;
     phone: string | null;
+    username: string | null;
+    has_pin: boolean;
     role: Role;
     profile: Profile;
     phone_verified_at: string | null;
@@ -67,9 +69,15 @@ export interface User {
     notification_token?: string | null;
     last_login_at: string | null;
     status: string;
+    referral_code: string | null;
+    referrals_count: number;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
+    campaigns?: any[];
+    needs?: any[];
+    campaigns_count?: number;
+    needs_count?: number;
 }
 
 export interface AuthToken {
