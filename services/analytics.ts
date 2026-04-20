@@ -43,19 +43,21 @@ export interface DisbursementAnalyticsResponse {
 }
 
 export const analyticsService = {
-    getAnalytics() {
-        return apiClient.get<ApiResponse<AnalyticsResponse>>(`/analytics`);
+    getAnalytics(params?: Record<string, any>) {
+        return apiClient.get<ApiResponse<AnalyticsResponse>>(`/analytics`, params);
     },
 
-    getDonationChartlyAnnualy() {
+    getDonationChartlyAnnualy(params?: Record<string, any>) {
         return apiClient.get<ApiResponse<DonationChartlyAnnualyResponse[]>>(
             "/analytics/donation-chartly-annualy",
+            params,
         );
     },
 
-    getTopPerformingCampaigns() {
+    getTopPerformingCampaigns(params?: Record<string, any>) {
         return apiClient.get<ApiResponse<TopPerformingCampaignsResponse[]>>(
             `/analytics/top-performing-campaigns`,
+            params,
         );
     },
 

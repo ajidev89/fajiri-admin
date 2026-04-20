@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { campaignService } from "@/services/campaigns";
+import { useAuthStore } from "@/store/auth-store";
 
 const stats = [
     {
@@ -52,9 +53,12 @@ const stats = [
 ];
 
 export function CampaignStats() {
+    const { user } = useAuthStore();
+    const isFundraiser = user?.role.slug === "fundraiser";
+
     const { data: analytics } = useQuery({
-        queryKey: ["campaign-analytics"],
-        queryFn: () => campaignService.getAnalytics(),
+        queryKey: ["campaign-analytics", isFundraiser ? user?.id : "all"],
+        queryFn: () => campaignService.getAnalytics(isFundraiser ? { added_by: user?.id } : {}),
     });
 
     const stats = [

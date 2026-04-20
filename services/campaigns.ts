@@ -72,9 +72,10 @@ export const campaignService = {
         );
     },
 
-    getAnalytics() {
+    getAnalytics(params?: Record<string, any>) {
         return apiClient.get<ApiResponse<Analytics>>(
             `/campaigns/analytics`,
+            params,
         );
     },
 

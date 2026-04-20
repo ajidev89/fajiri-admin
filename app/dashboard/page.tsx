@@ -29,17 +29,22 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { analyticsService } from "@/services/analytics";
+import { useAuthStore } from "@/store/auth-store";
 
 
 
 export default function DashboardPage() {
+    const { user } = useAuthStore();
+    const isFundraiser = user?.role.slug === "fundraiser";
+    const filterParams = isFundraiser ? { added_by: user?.id } : {};
+
     const {
         data: analyticsRes,
         isLoading,
         error,
     } = useQuery({
-        queryKey: ["analytics"],
-        queryFn: () => analyticsService.getAnalytics(),
+        queryKey: ["analytics", isFundraiser ? user?.id : "all"],
+        queryFn: () => analyticsService.getAnalytics(filterParams),
     });
 
     const {
@@ -47,13 +52,13 @@ export default function DashboardPage() {
         isLoading: topPerformingCampaignsIsLoading,
         error: topPerformingCampaignsError,
     } = useQuery({
-        queryKey: ["top-performing-campaigns"],
-        queryFn: () => analyticsService.getTopPerformingCampaigns(),
+        queryKey: ["top-performing-campaigns", isFundraiser ? user?.id : "all"],
+        queryFn: () => analyticsService.getTopPerformingCampaigns(filterParams),
     });
 
     const { data: donationChartlyAnnualyRes } = useQuery({
-        queryKey: ["donation-chartly-annualy"],
-        queryFn: () => analyticsService.getDonationChartlyAnnualy(),
+        queryKey: ["donation-chartly-annualy", isFundraiser ? user?.id : "all"],
+        queryFn: () => analyticsService.getDonationChartlyAnnualy(filterParams),
     });
 
     const analytics = React.useMemo(
@@ -74,7 +79,7 @@ export default function DashboardPage() {
     const stats = React.useMemo(() => {
         if (!analytics) return [];
 
-        return [
+        const allStats = [
             {
                 label: "Total Donations",
                 value: analytics.total_donations_amount?.[0] ? `${analytics.total_donations_amount[0].currency}${Number(analytics.total_donations_amount[0].total_amount).toLocaleString()}` : "0",
@@ -112,7 +117,14 @@ export default function DashboardPage() {
                 iconColor: "text-blue-600",
             },
         ];
-    }, [analytics]);
+
+        // Remove "Total Members" for fundraisers
+        if (isFundraiser) {
+            return allStats.filter(s => s.label !== "Total Members");
+        }
+
+        return allStats;
+    }, [analytics, isFundraiser]);
 
     const trendData = React.useMemo(() => {
         return donationChartlyAnnualy.map(d => ({
