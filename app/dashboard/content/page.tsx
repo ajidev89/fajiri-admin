@@ -628,7 +628,9 @@ export default function ContentManagementPage() {
         setIsLoading(true);
         try {
             const isFundraiser = user?.role.slug === "fundraiser";
-            const params = isFundraiser ? { added_by: user?.id } : { all: "true" };
+            const params: Record<string, string> = isFundraiser && user?.id 
+                ? { added_by: user.id } 
+                : { all: "true" };
 
             const [postsRes, eventsRes, partnersRes, initiativesRes, insurancesRes] = await Promise.all([
                 blogService.getPosts(params),

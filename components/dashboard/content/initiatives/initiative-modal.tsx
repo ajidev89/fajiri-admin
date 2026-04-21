@@ -30,7 +30,7 @@ import { toast } from "sonner";
 const initiativeSchema = z.object({
     title: z.string().min(1, "Title is required"),
     description: z.string().min(1, "Description is required"),
-    status: z.string().default("active"),
+    status: z.string().min(1, "Status is required"),
     image: z.any().optional(),
 });
 
