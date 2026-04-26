@@ -65,7 +65,8 @@ export default function NeedsPage() {
 
     const columns: ColumnDef<Need>[] = [
         {
-            accessorKey: "image",
+            id: "name",
+            accessorKey: "name",
             header: "Needs",
             cell: ({ row }) => (
                 <div className="flex items-center gap-3">

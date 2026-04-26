@@ -11,7 +11,7 @@ import {
     getFilteredRowModel,
     ColumnFiltersState,
 } from "@tanstack/react-table";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
     Table, 
     TableBody, 
@@ -55,6 +55,11 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const table = useReactTable({
         data,
@@ -71,8 +76,12 @@ export function DataTable<TData, TValue>({
         },
     });
 
+    if (!isMounted) {
+        return <div className="bg-white rounded-2xl border border-[#EAECF0] h-96 animate-pulse" />;
+    }
+
     return (
-        <div className="bg-white rounded-2xl border border-[#EAECF0] shadow-sm overflow-hidden auto-cols-auto">
+        <div className="bg-white rounded-2xl border border-[#EAECF0] shadow-sm overflow-hidden">
             {/* Table Header/Toolbar */}
             <div className="p-4 sm:p-6 border-b border-[#EAECF0] flex flex-col md:flex-row md:items-center justify-between gap-4">
                 {title && <h2 className="text-base sm:text-lg font-bold text-[#101828]">{title}</h2>}
@@ -115,58 +124,56 @@ export function DataTable<TData, TValue>({
             </div>
 
             {/* Table Content */}
-            <div className="overflow-x-auto scrollbar-hide">
-                <Table className="min-w-full">
-                    <TableHeader className="bg-[#F9FAFB]">
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id} className="text-xs font-semibold text-[#475467] py-3 sm:py-4 h-auto uppercase tracking-wider whitespace-nowrap">
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext()
-                                            )}
-                                    </TableHead>
+            <Table className="min-w-max w-full">
+                <TableHeader className="bg-[#F9FAFB]">
+                    {table.getHeaderGroups().map((headerGroup) => (
+                        <TableRow key={headerGroup.id}>
+                            {headerGroup.headers.map((header) => (
+                                <TableHead key={header.id} className="text-xs font-semibold text-[#475467] py-3 sm:py-4 h-auto uppercase tracking-wider whitespace-nowrap">
+                                    {header.isPlaceholder
+                                        ? null
+                                        : flexRender(
+                                            header.column.columnDef.header,
+                                            header.getContext()
+                                        )}
+                                </TableHead>
+                            ))}
+                        </TableRow>
+                    ))}
+                </TableHeader>
+                <TableBody>
+                    {isLoading ? (
+                        <TableRow>
+                            <TableCell colSpan={columns.length} className="h-24 text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                    Loading...
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ) : table.getRowModel().rows?.length ? (
+                        table.getRowModel().rows.map((row) => (
+                            <TableRow
+                                key={row.id}
+                                data-state={row.getIsSelected() && "selected"}
+                                className="hover:bg-[#F9FAFB] border-[#EAECF0]"
+                            >
+                                {row.getVisibleCells().map((cell) => (
+                                    <TableCell key={cell.id} className="py-3 sm:py-4 px-3 sm:px-4 text-sm text-[#101828] whitespace-nowrap">
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    </TableCell>
                                 ))}
                             </TableRow>
-                        ))}
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    <div className="flex items-center justify-center gap-2">
-                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                                        Loading...
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ) : table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() && "selected"}
-                                    className="hover:bg-[#F9FAFB] border-[#EAECF0]"
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id} className="py-3 sm:py-4 px-3 sm:px-4 text-sm text-[#101828]">
-                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center text-[#667085]">
-                                    No results found.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={columns.length} className="h-24 text-center text-[#667085]">
+                                No results found.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
 
             {/* Table Pagination */}
             <div className="p-4 border-t border-[#EAECF0] flex flex-col sm:flex-row items-center justify-between gap-4">
