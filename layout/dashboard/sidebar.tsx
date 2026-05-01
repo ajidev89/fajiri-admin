@@ -36,11 +36,7 @@ const sidebarItems = [
     { label: "Users", icon: Users, href: "/dashboard/users" },
     { label: "Fundraiser", icon: UserSquare, href: "/dashboard/fundraiser" },
     { label: "Content Management", icon: FileText, href: "/dashboard/content" },
-    {
-        label: "Reports & Analytics",
-        icon: BarChart3,
-        href: "/dashboard/reports",
-    },
+
     { label: "Disbursements", icon: Receipt, href: "/dashboard/disbursements" },
 ];
 
