@@ -117,7 +117,7 @@ function UserActionCell({ user }: { user: UserWithWallet }) {
     const [isSuspendModalOpen, setIsSuspendModalOpen] = React.useState(false);
     const queryClient = useQueryClient();
 
-    const isSuspended = user.deleted_at !== null;
+    const isSuspended = user.status === "suspended";
 
     const blockMutation = useMutation({
         mutationFn: () => usersService.blockUser(user.id),

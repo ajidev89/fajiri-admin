@@ -51,4 +51,12 @@ export const usersService = {
             `/users/${userId}/unsuspend`,
         );
     },
+    getUserAudits(userId: string) {
+        return apiClient.get<ApiResponse<any[]>>(`/users/${userId}/audits`);
+    },
+    getUserTransactions(userId: string) {
+        return apiClient.get<ApiResponse<any[]>>(
+            `/users/${userId}/transactions`,
+        );
+    },
 };

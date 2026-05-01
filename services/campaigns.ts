@@ -128,4 +128,10 @@ export const campaignService = {
             formData,
         );
     },
+    getUserDonatedCampaigns(params: { user_id: string }) {
+        return apiClient.get<PaginatedResponse<Campaign>>(
+            "/campaigns/user-donated",
+            params,
+        );
+    },
 };

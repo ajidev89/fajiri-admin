@@ -57,6 +57,7 @@ export interface Profile {
 
 export interface User {
     id: string;
+    member_id: string;
     email: string;
     email_verified_at: string;
     phone: string | null;

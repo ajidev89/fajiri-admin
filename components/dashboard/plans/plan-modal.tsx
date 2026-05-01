@@ -99,11 +99,16 @@ export function PlanModal({
 
     const createMutation = useMutation({
         mutationFn: (data: PlanFormValues) => {
-            return planService.createPlan({
+            const payload: any = {
                 ...data,
-                rc_product_id_ios: data.rc_product_id_ios || null,
                 features: data.features.map((f) => f.value),
-            });
+            };
+            
+            if (!payload.rc_product_id_ios) {
+                delete payload.rc_product_id_ios;
+            }
+
+            return planService.createPlan(payload);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["plans"] });
@@ -119,11 +124,16 @@ export function PlanModal({
     const updateMutation = useMutation({
         mutationFn: (data: PlanFormValues) => {
             if (!initialData?.id) throw new Error("No Plan ID found");
-            return planService.updatePlan(initialData.id, {
+            const payload: any = {
                 ...data,
-                rc_product_id_ios: data.rc_product_id_ios || null,
                 features: data.features.map((f) => f.value),
-            });
+            };
+
+            if (!payload.rc_product_id_ios) {
+                delete payload.rc_product_id_ios;
+            }
+
+            return planService.updatePlan(initialData.id, payload);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["plans"] });
