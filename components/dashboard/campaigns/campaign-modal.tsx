@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -22,6 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { CurrencySelect } from "@/components/form/currency-select";
 import { CloudUpload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ const campaignSchema = z.object({
     title: z.string().min(1, "Title is required"),
     category: z.string().min(1, "Category is required"),
     goalAmount: z.string().min(1, "Goal amount is required"),
+    currency: z.string().min(1, "Currency is required"),
     days: z.string().min(1, "days is required"),
     description: z
         .string()
@@ -71,6 +73,18 @@ export function CampaignModal({
         }));
     }, [types]);
 
+    const methods = useForm<CampaignFormValues>({
+        resolver: zodResolver(campaignSchema),
+        defaultValues: {
+            title: "",
+            category: "",
+            goalAmount: "",
+            currency: "NGN",
+            days: "",
+            description: "",
+        },
+    });
+
     const {
         register,
         handleSubmit,
@@ -78,23 +92,14 @@ export function CampaignModal({
         watch,
         reset,
         formState: { errors },
-    } = useForm<CampaignFormValues>({
-        resolver: zodResolver(campaignSchema),
-        defaultValues: {
-            title: "",
-            category: "",
-            goalAmount: "",
-            days: "",
-            description: "",
-        },
-    });
+    } = methods;
 
     const createMutation = useMutation({
         mutationFn: (data: CampaignFormValues) => {
             return campaignService.createCampaign({
                 title: data.title,
                 body: data.description,
-                currency: "NGN", // Default as not in UI
+                currency: data.currency,
                 goal_amount: data.goalAmount,
                 type: data.category,
                 days: data.days,
@@ -148,6 +153,7 @@ export function CampaignModal({
                 title: initialData.title,
                 category: initialData.type || "",
                 goalAmount: initialData.goal_amount.toString(),
+                currency: initialData.currency || "NGN",
                 days: dayjs(initialData.end_date).diff(dayjs(initialData.created_at), 'day').toString(),
                 description: initialData.body,
             });
@@ -156,6 +162,7 @@ export function CampaignModal({
                 title: "",
                 category: "",
                 goalAmount: "",
+                currency: "NGN",
                 days: "",
                 description: "",
             });
@@ -182,7 +189,7 @@ export function CampaignModal({
                         {isEdit ? "Edit Campaign" : "Create Campaign"}
                     </DialogTitle>
                 </DialogHeader>
-
+                <FormProvider {...methods}>
                 <form
                     onSubmit={handleSubmit(onSubmit)}
                     className="p-6 space-y-6"
@@ -254,23 +261,26 @@ export function CampaignModal({
                     {/* Goal & Duration */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
+                            <CurrencySelect
+                                name="currency"
+                                label="Currency"
+                                placeholder="Select currency"
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                        <div className="space-y-2">
                             <Label
                                 htmlFor="goalAmount"
                                 className="text-sm font-medium text-[#344054]"
                             >
                                 Goal
                             </Label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#667085]">
-                                    ₦
-                                </span>
-                                <Input
-                                    id="goalAmount"
-                                    placeholder="500,000"
-                                    {...register("goalAmount")}
-                                    className="h-11 pl-8 bg-white border-[#EAECF0]"
-                                />
-                            </div>
+                            <Input
+                                id="goalAmount"
+                                placeholder="500,000"
+                                {...register("goalAmount")}
+                                className="h-11 bg-white border-[#EAECF0]"
+                            />
                             {errors.goalAmount && (
                                 <p className="text-xs text-red-500">
                                     {errors.goalAmount.message}
@@ -433,6 +443,7 @@ export function CampaignModal({
                         </div>
                     </div>
                 </form>
+                </FormProvider>
             </DialogContent>
         </Dialog>
     );

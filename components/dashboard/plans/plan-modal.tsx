@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -69,15 +69,7 @@ export function PlanModal({
     const isEdit = !!initialData;
     const queryClient = useQueryClient();
 
-    const {
-        register,
-        handleSubmit,
-        control,
-        setValue,
-        watch,
-        reset,
-        formState: { errors },
-    } = useForm<PlanFormValues>({
+    const methods = useForm<PlanFormValues>({
         resolver: zodResolver(planSchema),
         defaultValues: {
             name: "",
@@ -92,6 +84,16 @@ export function PlanModal({
             features: [{ value: "" }],
         },
     });
+
+    const {
+        register,
+        handleSubmit,
+        control,
+        setValue,
+        watch,
+        reset,
+        formState: { errors },
+    } = methods;
 
     const { fields, append, remove } = useFieldArray({
         control,
@@ -197,7 +199,7 @@ export function PlanModal({
                         {isEdit ? "Edit Plan" : "Create Subscription Plan"}
                     </DialogTitle>
                 </DialogHeader>
-
+                <FormProvider {...methods}>
                 <form
                     onSubmit={handleSubmit(onSubmit)}
                     className="p-6 space-y-6"
@@ -481,6 +483,7 @@ export function PlanModal({
                         </Button>
                     </div>
                 </form>
+                </FormProvider>
             </DialogContent>
         </Dialog>
     );

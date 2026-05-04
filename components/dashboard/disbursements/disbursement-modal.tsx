@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useForm } from "react-hook-form"
+import { useForm, FormProvider } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { 
@@ -21,6 +21,7 @@ import {
     SelectTrigger, 
     SelectValue 
 } from "@/components/ui/select"
+import { CurrencySelect } from "@/components/form/currency-select"
 import { cn } from "@/lib/utils"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -76,14 +77,7 @@ export function DisbursementModal({
         enabled: isOpen,
     })
 
-    const {
-        register,
-        handleSubmit,
-        setValue,
-        watch,
-        reset,
-        formState: { errors }
-    } = useForm<DisbursementFormValues>({
+    const methods = useForm<DisbursementFormValues>({
         resolver: zodResolver(disbursementSchema),
         defaultValues: {
             type: "campaign",
@@ -98,11 +92,19 @@ export function DisbursementModal({
         }
     })
 
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        reset,
+        formState: { errors }
+    } = methods;
+
     const typeValue = watch("type")
     const disbursableIdValue = watch("disbursableId")
     const paymentMethodValue = watch("paymentMethod")
     const bankNameValue = watch("bankName")
-    const currencyValue = watch("currency")
 
     // Dynamically get the list based on type
     const sourceList = React.useMemo(() => {
@@ -153,7 +155,7 @@ export function DisbursementModal({
                         Create Disbursement Request
                     </DialogTitle>
                 </DialogHeader>
-
+                <FormProvider {...methods}>
                 <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
                     {/* Type & Source */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -211,19 +213,12 @@ export function DisbursementModal({
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                             <div className="space-y-2">
-                                <Label htmlFor="currency" className="text-sm font-medium text-[#344054]">Currency</Label>
-                                <Select 
-                                    onValueChange={(val) => setValue("currency", val)}
-                                    value={currencyValue}
-                                >
-                                    <SelectTrigger className="h-11 bg-white border-[#EAECF0]">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-white">
-                                        <SelectItem value="NGN">NGN</SelectItem>
-                                        <SelectItem value="USD">USD</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <CurrencySelect
+                                    name="currency"
+                                    label="Currency"
+                                    placeholder="NGN"
+                                    disabled={isSubmitting}
+                                />
                             </div>
                             <div className="col-span-2 space-y-2">
                                 <Label htmlFor="amount" className="text-sm font-medium text-[#344054]">Amount</Label>
@@ -321,6 +316,7 @@ export function DisbursementModal({
                         </Button>
                     </div>
                 </form>
+                </FormProvider>
             </DialogContent>
         </Dialog>
     )

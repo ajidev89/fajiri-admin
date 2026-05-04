@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -21,6 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { CurrencySelect } from "@/components/form/currency-select";
 import { CloudUpload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -54,14 +55,7 @@ export function NeedModal({
     const isEdit = !!initialData;
     const queryClient = useQueryClient();
 
-    const {
-        register,
-        handleSubmit,
-        setValue,
-        watch,
-        reset,
-        formState: { errors },
-    } = useForm<NeedFormValues>({
+    const methods = useForm<NeedFormValues>({
         resolver: zodResolver(needSchema),
         defaultValues: {
             name: "",
@@ -73,6 +67,15 @@ export function NeedModal({
             description: "",
         },
     });
+
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        reset,
+        formState: { errors },
+    } = methods;
 
     const createMutation = useMutation({
         mutationFn: (data: NeedFormValues) => {
@@ -156,8 +159,7 @@ export function NeedModal({
     };
 
     const isSubmitting = createMutation.isPending || updateMutation.isPending;
-    const urgencyValue = watch("urgency");
-    const currencyValue = watch("currency");
+    const urgencyValue = methods.watch("urgency");
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -167,8 +169,8 @@ export function NeedModal({
                         {isEdit ? "Edit Need" : "Create New Need"}
                     </DialogTitle>
                 </DialogHeader>
-
-                <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
+                <FormProvider {...methods}>
+                <form onSubmit={methods.handleSubmit(onSubmit)} className="p-6 space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="name" className="text-sm font-medium text-[#344054]">Name</Label>
@@ -222,18 +224,12 @@ export function NeedModal({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="currency" className="text-sm font-medium text-[#344054]">Currency</Label>
-                            <Select onValueChange={(val) => setValue("currency", val)} value={currencyValue}>
-                                <SelectTrigger className="h-11 bg-white border-[#EAECF0]">
-                                    <SelectValue placeholder="Select currency" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white">
-                                    <SelectItem value="NGN">NGN (₦)</SelectItem>
-                                    <SelectItem value="USD">USD ($)</SelectItem>
-                                    <SelectItem value="GBP">GBP (£)</SelectItem>
-                                    <SelectItem value="EUR">EUR (€)</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <CurrencySelect
+                                name="currency"
+                                label="Currency"
+                                placeholder="Select currency"
+                                disabled={isSubmitting}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="amount" className="text-sm font-medium text-[#344054]">Target Amount</Label>
@@ -324,6 +320,7 @@ export function NeedModal({
                         </Button>
                     </div>
                 </form>
+                </FormProvider>
             </DialogContent>
         </Dialog>
     );

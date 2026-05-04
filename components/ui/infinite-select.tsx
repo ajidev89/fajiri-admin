@@ -2,7 +2,7 @@
 
 import type * as React from "react";
 import { useEffect, useState, useCallback } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useController } from "react-hook-form";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -76,20 +76,32 @@ const InfiniteSelect: React.FC<InfiniteSelectProps> = ({
     footer,
 }) => {
     const form = useSafeFormContext();
+    
+    // We use local state for the value if RHF is not used
+    const [localValue, setLocalValue] = useState<string>(value || "");
 
-    const register = form?.register;
-    const getValues = form?.getValues;
-    const setValue = form?.setValue;
+    // We only call useController if name is provided and we are in a form context
+    // Actually, hooks must be called unconditionally. 
+    // We can use a "dummy" name if needed, but RHF usually requires a valid name.
+    const { field } = useController({
+        name: name || "unnamed-select",
+        control: form?.control,
+        defaultValue: value || "",
+        disabled: disabled,
+    });
+
     const errors = form?.formState?.errors;
+    const fieldError = name ? errors?.[name] : null;
 
     const [open, setOpen] = useState(false);
     const [page, setPage] = useState(1);
     const [selectedOption, setSelectedOption] = useState<Option | null>(null);
 
+    // Sync field value with local state if needed
+    const currentValue = name && form ? field.value : (value || localValue);
+
     /* ---------------- Init value ---------------- */
     useEffect(() => {
-        const currentValue = getValues?.(name!) || value;
-
         if (!currentValue) {
             setSelectedOption(null);
             return;
@@ -100,8 +112,7 @@ const InfiniteSelect: React.FC<InfiniteSelectProps> = ({
         );
 
         if (option) setSelectedOption(option);
-    }, [options, value, getValues, name]);
-
+    }, [options, currentValue]);
 
     /* ---------------- Reset page on open ---------------- */
     useEffect(() => {
@@ -132,15 +143,13 @@ const InfiniteSelect: React.FC<InfiniteSelectProps> = ({
     const handleSelect = (option: Option) => {
         setSelectedOption(option);
         onChange?.(option.value);
-
-        if (useFormContext && setValue && name) {
-            setValue(name, option.value as any, {
-                shouldValidate: true,
-                shouldDirty: true,
-                shouldTouch: true,
-            });
+        
+        if (name && form) {
+            field.onChange(option.value);
+        } else {
+            setLocalValue(option.value);
         }
-
+        
         setOpen(false);
     };
 
@@ -153,23 +162,12 @@ const InfiniteSelect: React.FC<InfiniteSelectProps> = ({
         }
     };
 
-    const fieldError = name ? errors?.[name] : null;
-
     return (
         <div className="w-full space-y-2">
             {label && (
-                <label className="text-sm font-medium text-[#181B25] mb-1">
+                <label className="text-sm font-medium text-[#344054] mb-1">
                     {label}
                 </label>
-            )}
-
-            {/* Hidden input only for RHF */}
-            {useFormContext && register && name && (
-                <input
-                    type="hidden"
-                    {...register(name, validation)}
-                    value={selectedOption?.value ?? ""}
-                />
             )}
 
             <Popover
@@ -207,7 +205,7 @@ const InfiniteSelect: React.FC<InfiniteSelectProps> = ({
                 </PopoverTrigger>
 
                 <PopoverContent
-                    className="w-(--radix-popover-trigger-width) p-0 !z-[999999]"
+                    className="w-(--radix-popover-trigger-width) bg-white p-0 !z-[999999]"
                     align="start"
                 >
                     <Command shouldFilter={!onSearch}>

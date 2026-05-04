@@ -18,7 +18,7 @@ export function CurrencySelect({ name, label, placeholder = "Select Currency", d
   });
 
   const options = currenciesRes?.data?.map((c) => ({
-    name: `${c.code} - ${c.country}`,
+    name: c.code,
     value: c.code,
   })) || [];
 

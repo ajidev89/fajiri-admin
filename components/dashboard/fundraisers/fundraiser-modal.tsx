@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -20,6 +20,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { CurrencySelect } from "@/components/form/currency-select";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fundraiserService } from "@/services/fundraisers";
@@ -57,14 +58,7 @@ export function FundraiserModal({
 
     const countries = countriesRes?.data || [];
 
-    const {
-        register,
-        handleSubmit,
-        setValue,
-        watch,
-        reset,
-        formState: { errors },
-    } = useForm<FundraiserFormValues>({
+    const methods = useForm<FundraiserFormValues>({
         resolver: zodResolver(fundraiserSchema),
         defaultValues: {
             first_name: "",
@@ -77,18 +71,16 @@ export function FundraiserModal({
         },
     });
 
-    const countryIdValue = watch("country_id");
-    const currencyValue = watch("currency");
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        reset,
+        formState: { errors },
+    } = methods;
 
-    // Update currency automatically when country changes
-    React.useEffect(() => {
-        if (countryIdValue) {
-            const selectedCountry = countries.find(c => c.id.toString() === countryIdValue);
-            if (selectedCountry) {
-                setValue("currency", selectedCountry.currency);
-            }
-        }
-    }, [countryIdValue, countries, setValue]);
+    const countryIdValue = watch("country_id");
 
     const createMutation = useMutation({
         mutationFn: (data: FundraiserFormValues) => {
@@ -123,7 +115,7 @@ export function FundraiserModal({
                         Create Fundraiser Account
                     </DialogTitle>
                 </DialogHeader>
-
+                <FormProvider {...methods}>
                 <form
                     onSubmit={handleSubmit(onSubmit)}
                     className="p-6 space-y-5"
@@ -236,25 +228,12 @@ export function FundraiserModal({
                             )}
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-sm font-medium text-[#344054]">
-                                Currency
-                            </Label>
-                            <Select
-                                onValueChange={(value) => setValue("currency", value)}
-                                value={currencyValue}
-                            >
-                                <SelectTrigger className="h-11 bg-white border-[#EAECF0]">
-                                    <SelectValue placeholder="Select currency" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white">
-                                    <SelectItem value="NGN">NGN (Naira)</SelectItem>
-                                    <SelectItem value="USD">USD (Dollar)</SelectItem>
-                                    <SelectItem value="GBP">GBP (Pounds)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {errors.currency && (
-                                <p className="text-xs text-red-500">{errors.currency.message}</p>
-                            )}
+                            <CurrencySelect
+                                name="currency"
+                                label="Currency"
+                                placeholder="Select currency"
+                                disabled={isSubmitting}
+                            />
                         </div>
                     </div>
 
@@ -277,6 +256,7 @@ export function FundraiserModal({
                         </Button>
                     </div>
                 </form>
+                </FormProvider>
             </DialogContent>
         </Dialog>
     );
