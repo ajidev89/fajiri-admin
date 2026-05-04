@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { planService, Plan } from "@/services/plans";
 import { toast } from "sonner";
+import { CurrencySelect } from "@/components/form/currency-select";
 
 const planSchema = z.object({
     name: z.string().min(1, "Name is required"),
@@ -289,17 +290,11 @@ export function PlanModal({
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <Label
-                                htmlFor="currency"
-                                className="text-sm font-medium text-[#344054]"
-                            >
-                                Currency
-                            </Label>
-                            <Input
-                                id="currency"
+                            <CurrencySelect
+                                name="currency"
+                                label="Currency"
                                 placeholder="NGN"
-                                {...register("currency")}
-                                className="h-11 bg-white border-[#EAECF0]"
+                                disabled={isSubmitting}
                             />
                         </div>
                         <div className="space-y-2">
