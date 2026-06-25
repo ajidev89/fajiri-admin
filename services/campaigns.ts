@@ -38,6 +38,7 @@ export interface UpdateCampaignPayload {
     status?: string;
     campaign_type?: string;
     type?: string;
+    days?: string;
     images?: File[];
 }
 
@@ -115,6 +116,7 @@ export const campaignService = {
         if (payload.campaign_type)
             formData.append("campaign_type", payload.campaign_type);
         if (payload.type) formData.append("type", payload.type);
+        if (payload.days) formData.append("days", payload.days);
         if (payload.images) {
             payload.images.forEach((image) => {
                 formData.append("images[]", image);

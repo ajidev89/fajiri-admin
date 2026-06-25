@@ -27,6 +27,7 @@ import { CloudUpload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { campaignService, Campaign } from "@/services/campaigns";
+import { categoryService } from "@/services/categories";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 
@@ -60,18 +61,18 @@ export function CampaignModal({
 
     const queryClient = useQueryClient();
 
-    const { data: types } = useQuery({
-        queryKey: ["campaign-types"],
-        queryFn: () => campaignService.getTypes(),
+    const { data: categoriesRes } = useQuery({
+        queryKey: ["categories"],
+        queryFn: () => categoryService.getCategories(),
     });
 
     const category = React.useMemo(() => {
-        if (!types) return [];
-        return Object.keys(types.data).map((key) => ({
-            value: types.data[key],
-            label: key,
+        if (!categoriesRes?.data) return [];
+        return categoriesRes.data.map((cat) => ({
+            value: cat.slug,
+            label: cat.name,
         }));
-    }, [types]);
+    }, [categoriesRes]);
 
     const methods = useForm<CampaignFormValues>({
         resolver: zodResolver(campaignSchema),
@@ -127,6 +128,8 @@ export function CampaignModal({
                 title: data.title,
                 body: data.description,
                 goal_amount: data.goalAmount,
+                currency: data.currency,
+                days: data.days,
                 status: initialData.status,
                 type: data.category,
                 images:

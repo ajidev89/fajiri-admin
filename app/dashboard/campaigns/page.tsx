@@ -16,9 +16,11 @@ import {
     DropdownMenuTrigger,
 } from "../../../components/ui/dropdown-menu";
 import { Button } from "../../../components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { campaignService, Campaign } from "@/services/campaigns";
 import { useAuthStore } from "@/store/auth-store";
+import { CategoriesView } from "@/components/dashboard/campaigns/categories-view";
 
 // Columns definition
 const columns: ColumnDef<Campaign>[] = [
@@ -165,51 +167,76 @@ export default function CampaignsPage() {
 
     return (
         <DashboardLayout>
-            <div className="space-y-8">
-                {/* Header Section */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2 sm:mt-0">
-                    <div className="space-y-1">
-                        <h2 className="text-xl sm:text-2xl font-bold text-[#101828]">
-                            All Campaigns
-                        </h2>
-                        <p className="text-xs sm:text-sm text-[#475467]">
-                            Manage and monitor all donation campaigns in the system.
-                        </p>
-                    </div>
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                        <Button
-                            variant="outline"
-                            className="border-[#EAECF0] text-[#344054] font-semibold h-11 sm:h-10 flex items-center justify-center"
+            <Tabs defaultValue="campaigns" className="w-full">
+                <div className="flex justify-between items-center mb-6">
+                    <TabsList className="bg-[#F2F4F7] p-1 h-12">
+                        <TabsTrigger 
+                            value="campaigns" 
+                            className="text-sm font-medium h-10 px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md"
                         >
-                            Export Data
-                        </Button>
-                        <Button
-                            className="bg-primary hover:bg-primary/90 text-white font-semibold gap-2 h-11 sm:h-10 flex items-center justify-center"
-                            onClick={handleCreate}
+                            Campaigns
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="categories" 
+                            className="text-sm font-medium h-10 px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md"
                         >
-                            <Plus className="h-4 w-4" /> Create Campaign
-                        </Button>
-                    </div>
+                            Categories
+                        </TabsTrigger>
+                    </TabsList>
                 </div>
 
-                <CampaignModal
-                    isOpen={isModalOpen}
-                    onOpenChange={setIsModalOpen}
-                    initialData={selectedCampaign}
-                />
+                <TabsContent value="campaigns" className="mt-0 outline-none">
+                    <div className="space-y-8">
+                        {/* Header Section */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2 sm:mt-0">
+                            <div className="space-y-1">
+                                <h2 className="text-xl sm:text-2xl font-bold text-[#101828]">
+                                    All Campaigns
+                                </h2>
+                                <p className="text-xs sm:text-sm text-[#475467]">
+                                    Manage and monitor all donation campaigns in the system.
+                                </p>
+                            </div>
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                                <Button
+                                    variant="outline"
+                                    className="border-[#EAECF0] text-[#344054] font-semibold h-11 sm:h-10 flex items-center justify-center"
+                                >
+                                    Export Data
+                                </Button>
+                                <Button
+                                    className="bg-[#0E3B5D] hover:bg-[#0E3B5D]/90 text-white font-semibold gap-2 h-11 sm:h-10 flex items-center justify-center"
+                                    onClick={handleCreate}
+                                >
+                                    <Plus className="h-4 w-4" /> Create Campaign
+                                </Button>
+                            </div>
+                        </div>
 
-                {/* Stats Cards */}
-                <CampaignStats />
+                        <CampaignModal
+                            isOpen={isModalOpen}
+                            onOpenChange={setIsModalOpen}
+                            initialData={selectedCampaign}
+                        />
 
-                {/* Table Section */}
-                <DataTable
-                    columns={columns}
-                    data={campaigns}
-                    searchKey="title"
-                    title="Campaign Table"
-                    isLoading={isLoading}
-                />
-            </div>
+                        {/* Stats Cards */}
+                        <CampaignStats />
+
+                        {/* Table Section */}
+                        <DataTable
+                            columns={columns}
+                            data={campaigns}
+                            searchKey="title"
+                            title="Campaign Table"
+                            isLoading={isLoading}
+                        />
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="categories" className="mt-0 outline-none">
+                    <CategoriesView />
+                </TabsContent>
+            </Tabs>
         </DashboardLayout>
     );
 }

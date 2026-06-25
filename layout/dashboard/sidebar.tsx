@@ -18,6 +18,8 @@ import {
     HeartHandshake,
     CreditCard,
     Library,
+    Trophy,
+    Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Cookies from "js-cookie";
@@ -36,7 +38,8 @@ const sidebarItems = [
     { label: "Users", icon: Users, href: "/dashboard/users" },
     { label: "Fundraiser", icon: UserSquare, href: "/dashboard/fundraiser" },
     { label: "Content Management", icon: FileText, href: "/dashboard/content" },
-
+    { label: "Leaderboard", icon: Trophy, href: "/dashboard/leaderboard" },
+    { label: "Family Tree", icon: Network, href: "/dashboard/family-tree" },
     { label: "Disbursements", icon: Receipt, href: "/dashboard/disbursements" },
 ];
 
