@@ -11,7 +11,7 @@ export { preferenceService } from "./preference";
 export { googleService } from "./google";
 export { initiativeService, type Initiative } from "./initiatives";
 export { insuranceService, type Insurance } from "./insurances";
-export { countryService } from "./countries";
+export { countryService, type Country } from "./countries";
 export { needService } from "./needs";
 export { blogService, type BlogPost } from "./blog";
 export { categoryService, type Category } from "./categories";
