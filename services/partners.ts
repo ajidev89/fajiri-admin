@@ -20,6 +20,7 @@ export interface CreatePartnerPayload {
     logo?: File;
     focus_areas?: string[];
     impact?: string[];
+    country_id?: string;
 }
 
 export const partnerService = {
@@ -37,6 +38,7 @@ export const partnerService = {
         formData.append("about", payload.about);
         if (payload.website) formData.append("website", payload.website);
         if (payload.logo) formData.append("logo", payload.logo);
+        if (payload.country_id) formData.append("country_id", payload.country_id);
         
         if (payload.focus_areas) {
             payload.focus_areas.forEach((area) => formData.append("focus_areas[]", area));

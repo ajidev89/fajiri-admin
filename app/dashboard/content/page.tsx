@@ -12,6 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MoreHorizontal, Plus, Search } from "lucide-react";
 import { MediaLibrary } from "@/components/dashboard/content/media-library";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 import {
     DropdownMenu,
@@ -31,6 +38,8 @@ import {
     type Initiative,
     insuranceService,
     type Insurance,
+    countryService,
+    type Country,
 } from "@/services";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -615,6 +624,8 @@ export default function ContentManagementPage() {
     const [initiatives, setInitiatives] = React.useState<Initiative[]>([]);
     const [insurances, setInsurances] = React.useState<Insurance[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
+    const [countries, setCountries] = React.useState<Country[]>([]);
+    const [selectedCountry, setSelectedCountry] = React.useState<string>("all");
     
     // Initiative Modal state
     const [isInitiativeModalOpen, setIsInitiativeModalOpen] = React.useState(false);
@@ -631,6 +642,10 @@ export default function ContentManagementPage() {
             const params: Record<string, string> = isFundraiser && user?.id 
                 ? { added_by: user.id } 
                 : { all: "true" };
+
+            if (selectedCountry !== "all") {
+                params.country_id = selectedCountry;
+            }
 
             const [postsRes, eventsRes, partnersRes, initiativesRes, insurancesRes] = await Promise.all([
                 blogService.getPosts(params),
@@ -649,11 +664,24 @@ export default function ContentManagementPage() {
         } finally {
             setIsLoading(false);
         }
+    }, [user?.id, user?.role.slug, selectedCountry]);
+
+    const fetchCountries = React.useCallback(async () => {
+        try {
+            const res = await countryService.getCountries();
+            setCountries(res.data || []);
+        } catch (error) {
+            console.error("Failed to fetch countries", error);
+        }
     }, []);
 
     React.useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    React.useEffect(() => {
+        fetchCountries();
+    }, [fetchCountries]);
 
     const handleDeletePost = async (id: string) => {
         if (!confirm("Are you sure you want to delete this post?")) return;
@@ -760,17 +788,31 @@ export default function ContentManagementPage() {
             <div className="space-y-8">
                 {/* Header Section */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                        <h2 className="text-2xl font-bold text-[#101828]">
-                            Content Management
-                        </h2>
-                        <p className="text-sm text-[#475467]">
-                            Control and organize platform content.
-                        </p>
-                    </div>
+                <div className="space-y-1">
+                    <h2 className="text-xl sm:text-2xl font-bold text-[#101828]">
+                        Content Management
+                    </h2>
+                    <p className="text-xs sm:text-sm text-[#475467]">
+                        Manage your blogs, events, partners, and media files.
+                    </p>
                 </div>
+                
+                <div className="flex items-center gap-4">
+                    <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                        <SelectTrigger className="w-[180px] bg-white border-[#E9EEF2]">
+                            <SelectValue placeholder="Filter by country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Countries</SelectItem>
+                            {countries.map(c => (
+                                <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
 
-                {/* Tabs Section */}
+            {/* Tabs Section */}
                 <Tabs defaultValue="blog" className="w-full">
                     <TabsList className="h-auto bg-transparent p-0 gap-8 justify-start border-b border-[#EAECF0] w-full rounded-none overflow-x-auto scrollbar-hide">
                         <TabsTrigger

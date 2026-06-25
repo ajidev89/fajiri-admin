@@ -35,7 +35,7 @@ import {
     Calendar,
     Clock,
 } from "lucide-react";
-import { blogService, categoryService, type Category } from "@/services";
+import { blogService, categoryService, type Category, countryService, type Country } from "@/services";
 import { useAuthStore } from "@/store/auth-store";
 import { toast } from "sonner";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
@@ -51,6 +51,8 @@ export default function CreateBlogPostPage() {
     const [image, setImage] = React.useState<File | null>(null);
     const [imagePreview, setImagePreview] = React.useState<string | null>(null);
     const [categories, setCategories] = React.useState<Category[]>([]);
+    const [countries, setCountries] = React.useState<Country[]>([]);
+    const [countryId, setCountryId] = React.useState<string>("");
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [mounted, setMounted] = React.useState(false);
 
@@ -69,7 +71,16 @@ export default function CreateBlogPostPage() {
                 console.error("Failed to fetch categories", error);
             }
         };
+        const fetchCountries = async () => {
+            try {
+                const res = await countryService.getCountries();
+                setCountries(res.data || []);
+            } catch (error) {
+                console.error("Failed to fetch countries", error);
+            }
+        };
         fetchCategories();
+        fetchCountries();
     }, []);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,6 +109,7 @@ export default function CreateBlogPostPage() {
                 category_id: categoryId,
                 status,
                 image: image || undefined,
+                country_id: countryId && countryId !== "none" ? countryId : undefined,
             });
             toast.success("Post created successfully");
             router.push("/dashboard/content");
@@ -340,6 +352,32 @@ export default function CreateBlogPostPage() {
                                                 value={cat.id}
                                             >
                                                 {cat.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Country Select */}
+                            <div className="space-y-2">
+                                <Label className="text-xs font-semibold text-[#344054] uppercase tracking-wider">
+                                    Country (Optional)
+                                </Label>
+                                <Select
+                                    value={countryId}
+                                    onValueChange={setCountryId}
+                                >
+                                    <SelectTrigger className="h-12 border-[#D0D5DD] shadow-none focus:ring-primary/20">
+                                        <SelectValue placeholder="Select Country" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">None</SelectItem>
+                                        {countries.map((c) => (
+                                            <SelectItem
+                                                key={c.id}
+                                                value={c.id.toString()}
+                                            >
+                                                {c.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>

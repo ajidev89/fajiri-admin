@@ -32,6 +32,7 @@ export interface CreatePostPayload {
     image?: File;
     status?: string;
     is_featured?: boolean;
+    country_id?: string;
 }
 
 export const blogService = {
@@ -50,6 +51,7 @@ export const blogService = {
         formData.append("content", payload.content);
         if (payload.image) formData.append("image", payload.image);
         if (payload.status) formData.append("status", payload.status);
+        if (payload.country_id) formData.append("country_id", payload.country_id);
         if (payload.is_featured !== undefined) {
             formData.append("is_featured", payload.is_featured ? "1" : "0");
         }

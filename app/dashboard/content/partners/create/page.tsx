@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
     ChevronRight,
     Eye,
     X,
@@ -17,7 +24,7 @@ import {
     Zap,
     Plus,
 } from "lucide-react";
-import { partnerService } from "@/services";
+import { partnerService, countryService, type Country } from "@/services";
 import { toast } from "sonner";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 
@@ -101,7 +108,21 @@ export default function CreatePartnerPage() {
     const [impact, setImpact] = React.useState<string[]>([]);
     const [logo, setLogo] = React.useState<File | null>(null);
     const [logoPreview, setLogoPreview] = React.useState<string | null>(null);
+    const [countries, setCountries] = React.useState<Country[]>([]);
+    const [countryId, setCountryId] = React.useState<string>("");
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+    React.useEffect(() => {
+        const fetchCountries = async () => {
+            try {
+                const res = await countryService.getCountries();
+                setCountries(res.data || []);
+            } catch (error) {
+                console.error("Failed to fetch countries", error);
+            }
+        };
+        fetchCountries();
+    }, []);
 
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -132,6 +153,7 @@ export default function CreatePartnerPage() {
                 focus_areas: focusAreas,
                 impact: impact,
                 logo: logo || undefined,
+                country_id: countryId && countryId !== "none" ? countryId : undefined,
             });
             toast.success("Partner created successfully");
             router.push("/dashboard/content?tab=partners");
@@ -225,6 +247,32 @@ export default function CreatePartnerPage() {
                                 />
                                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
                             </div>
+                        </div>
+
+                        {/* Country Select */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-semibold text-[#344054]">
+                                Country (Optional)
+                            </Label>
+                            <Select
+                                value={countryId}
+                                onValueChange={setCountryId}
+                            >
+                                <SelectTrigger className="h-14 bg-white border-[#D0D5DD] shadow-none focus-visible:ring-primary/20">
+                                    <SelectValue placeholder="Select Country" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    {countries.map((c) => (
+                                        <SelectItem
+                                            key={c.id}
+                                            value={c.id.toString()}
+                                        >
+                                            {c.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
