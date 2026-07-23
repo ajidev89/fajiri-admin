@@ -49,7 +49,7 @@ const planSchema = z.object({
 const LEVELS = ["Bronze", "Silver", "Gold", "Platinum"];
 const ACCOUNT_TYPES = [
     { label: "Identified Membership", value: "identified-membership" },
-    { label: "Project Membership", value: "project-membership" },
+    { label: "Program Membership", value: "program-membership" },
     { label: "Corporate Membership", value: "corporate-membership" },
 ];
 
