@@ -59,4 +59,14 @@ export const usersService = {
             `/users/${userId}/transactions`,
         );
     },
+
+    updateUser(
+        userId: string,
+        payload: { role_id?: number; status?: string },
+    ) {
+        return apiClient.put<ApiResponse<UserWithWallet>>(
+            `/users/${userId}`,
+            payload,
+        );
+    },
 };

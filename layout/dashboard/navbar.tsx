@@ -87,8 +87,27 @@ export function Navbar() {
                                 {user?.role.name}
                             </p>
                         </div>
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center border border-[#EAECF0] shrink-0">
-                            <span className="text-xs sm:text-sm font-semibold text-[#475467]">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center border border-[#EAECF0] shrink-0 overflow-hidden">
+                            {user?.profile?.avatar ? (
+                                <img
+                                    src={user.profile.avatar}
+                                    alt={`${user.profile.first_name ?? ""} ${user.profile.last_name ?? ""}`.trim() || "User avatar"}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        // Hide the broken image and let the initials fallback show
+                                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                                        const parent = e.currentTarget.parentElement;
+                                        if (parent) {
+                                            const span = parent.querySelector("span");
+                                            if (span) span.style.display = "flex";
+                                        }
+                                    }}
+                                />
+                            ) : null}
+                            <span
+                                className="text-xs sm:text-sm font-semibold text-[#475467]"
+                                style={{ display: user?.profile?.avatar ? "none" : "flex" }}
+                            >
                                 {user?.profile?.first_name &&
                                 user?.profile?.last_name
                                     ? `${user.profile.first_name.charAt(0)}${user.profile.last_name.charAt(0)}`.toUpperCase()

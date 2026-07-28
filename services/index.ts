@@ -20,3 +20,5 @@ export { partnerService, type Partner } from "./partners";
 export { disbursementService, type Disbursement } from "./disbursements";
 export * from "./fundraisers";
 export * from "./media";
+export { adminService, type Permission, type Role as AdminRole, type TeamMember, type CreateTeamMemberPayload, type UpdateTeamMemberPayload, type CreateRolePayload, type UpdateRolePayload } from "./admin";
+export { pollService, type Poll, type PollOption, type PollResponse, type PollSummary, type PollType, type PollStatus, type CreatePollPayload, type UpdatePollPayload } from "./polls";
