@@ -24,7 +24,7 @@ const pollSchema = z.object({
     type: z.enum(["radio", "checkbox", "short_text", "long_text"] as const),
     start_date: z.string().min(1, "Start date is required"),
     start_time: z.string().min(1, "Start time is required"),
-    duration_hours: z.coerce.number().min(1, "Duration must be at least 1 hour"),
+    duration_hours: z.number().min(1, "Duration must be at least 1 hour"),
     options: z
         .array(z.object({ label: z.string().min(1, "Option label is required") }))
         .optional(),
@@ -179,7 +179,7 @@ export function PollForm({
                                 id="duration"
                                 type="number"
                                 min={1}
-                                {...register("duration_hours")}
+                                {...register("duration_hours", { valueAsNumber: true })}
                                 className={errors.duration_hours ? "border-red-400" : ""}
                             />
                         </div>
