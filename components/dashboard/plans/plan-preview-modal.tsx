@@ -72,6 +72,14 @@ export function PlanPreviewModal({ isOpen, onOpenChange, plan }: PlanPreviewModa
                                 {plan.account_type.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}
                             </Badge>
                         </div>
+                        {plan.sub_account_type && (
+                            <div className="space-y-1">
+                                <p className="text-sm font-medium text-[#667085]">Sub Account Type</p>
+                                <Badge variant="outline" className="font-normal bg-[#F0F5F9] text-primary">
+                                    {plan.sub_account_type.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                                </Badge>
+                            </div>
+                        )}
                     </div>
 
                     {/* Features List */}

@@ -5,6 +5,7 @@ export interface Plan {
     name: string;
     level: string;
     account_type: string;
+    sub_account_type?: string;
     slug: string;
     description: string;
     price: string;
@@ -24,6 +25,7 @@ export interface UpdatePlanPayload {
     name?: string;
     level?: string;
     account_type?: string;
+    sub_account_type?: string;
     description?: string;
     price?: string;
     currency?: string;

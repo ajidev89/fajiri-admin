@@ -33,6 +33,7 @@ const planSchema = z.object({
     name: z.string().min(1, "Name is required"),
     level: z.string().min(1, "Level is required"),
     account_type: z.string().min(1, "Account type is required"),
+    sub_account_type: z.string().optional(),
     description: z.string().optional(),
     price: z.string().min(1, "Price is required"),
     currency: z.string().min(1, "Currency is required"),
@@ -51,6 +52,11 @@ const ACCOUNT_TYPES = [
     { label: "Identified Membership", value: "identified-membership" },
     { label: "Program Membership", value: "program-membership" },
     { label: "Corporate Membership", value: "corporate-membership" },
+];
+
+const SUB_ACCOUNT_TYPES = [
+    { label: "Global Collaborators", value: "global-collaborators" },
+    { label: "Global Sponsors", value: "global-sponsors" },
 ];
 
 type PlanFormValues = z.infer<typeof planSchema>;
@@ -75,6 +81,7 @@ export function PlanModal({
             name: "",
             level: "",
             account_type: "",
+            sub_account_type: "",
             description: "",
             price: "",
             currency: "NGN",
@@ -155,6 +162,7 @@ export function PlanModal({
                 name: initialData.name,
                 level: initialData.level || "",
                 account_type: initialData.account_type || "",
+                sub_account_type: initialData.sub_account_type || "",
                 description: initialData.description || "",
                 price: initialData.price.toString(),
                 currency: initialData.currency,
@@ -170,6 +178,7 @@ export function PlanModal({
                 name: "",
                 level: "",
                 account_type: "",
+                sub_account_type: "",
                 description: "",
                 price: "",
                 currency: "NGN",
@@ -288,6 +297,41 @@ export function PlanModal({
                                 </p>
                             )}
                         </div>
+                        {watch("account_type") === "corporate-membership" && (
+                            <div className="space-y-2">
+                                <Label
+                                    htmlFor="sub_account_type"
+                                    className="text-sm font-medium text-[#344054]"
+                                >
+                                    Sub Account Type
+                                </Label>
+                                <Select
+                                    onValueChange={(val) =>
+                                        setValue("sub_account_type", val)
+                                    }
+                                    value={watch("sub_account_type")}
+                                >
+                                    <SelectTrigger className="h-11 bg-white border-[#EAECF0]">
+                                        <SelectValue placeholder="Select Sub Account Type" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white">
+                                        {SUB_ACCOUNT_TYPES.map((type) => (
+                                            <SelectItem
+                                                key={type.value}
+                                                value={type.value}
+                                            >
+                                                {type.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {errors.sub_account_type && (
+                                    <p className="text-xs text-red-500">
+                                        {errors.sub_account_type.message}
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
