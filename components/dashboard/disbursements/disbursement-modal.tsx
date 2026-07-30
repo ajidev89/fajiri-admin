@@ -84,7 +84,7 @@ export function DisbursementModal({
             disbursableId: "",
             beneficiary: "",
             amount: "",
-            currency: "NGN",
+            currency: "USD",
             paymentMethod: "Bank Transfer",
             accountName: "",
             accountNumber: "",
@@ -216,7 +216,7 @@ export function DisbursementModal({
                                 <CurrencySelect
                                     name="currency"
                                     label="Currency"
-                                    placeholder="NGN"
+                                    placeholder="USD"
                                     disabled={isSubmitting}
                                 />
                             </div>

@@ -80,7 +80,7 @@ export function CampaignModal({
             title: "",
             category: "",
             goalAmount: "",
-            currency: "NGN",
+            currency: "USD",
             days: "",
             description: "",
         },
@@ -156,7 +156,7 @@ export function CampaignModal({
                 title: initialData.title,
                 category: initialData.type || "",
                 goalAmount: initialData.goal_amount.toString(),
-                currency: initialData.currency || "NGN",
+                currency: initialData.currency || "USD",
                 days: dayjs(initialData.end_date).diff(dayjs(initialData.created_at), 'day').toString(),
                 description: initialData.body,
             });
@@ -165,7 +165,7 @@ export function CampaignModal({
                 title: "",
                 category: "",
                 goalAmount: "",
-                currency: "NGN",
+                currency: "USD",
                 days: "",
                 description: "",
             });

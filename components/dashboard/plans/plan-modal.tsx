@@ -39,7 +39,6 @@ const planSchema = z.object({
     currency: z.string().min(1, "Currency is required"),
     duration: z.number().min(1, "Duration is required"),
     status: z.boolean(),
-    rc_product_id_ios: z.string().optional(),
     features: z
         .array(
             z.object({ value: z.string().min(1, "Feature cannot be empty") }),
@@ -84,10 +83,9 @@ export function PlanModal({
             sub_account_type: "",
             description: "",
             price: "",
-            currency: "NGN",
+            currency: "USD",
             duration: 30,
             status: true,
-            rc_product_id_ios: "",
             features: [{ value: "" }],
         },
     });
@@ -113,10 +111,6 @@ export function PlanModal({
                 ...data,
                 features: data.features.map((f) => f.value),
             };
-            
-            if (!payload.rc_product_id_ios) {
-                delete payload.rc_product_id_ios;
-            }
 
             return planService.createPlan(payload);
         },
@@ -138,10 +132,6 @@ export function PlanModal({
                 ...data,
                 features: data.features.map((f) => f.value),
             };
-
-            if (!payload.rc_product_id_ios) {
-                delete payload.rc_product_id_ios;
-            }
 
             return planService.updatePlan(initialData.id, payload);
         },
@@ -167,8 +157,7 @@ export function PlanModal({
                 price: initialData.price.toString(),
                 currency: initialData.currency,
                 duration: initialData.duration,
-                status: initialData.status,
-                rc_product_id_ios: initialData.rc_product_id_ios || "",
+                status: initialData.status ?? true,
                 features: initialData.features?.length
                     ? initialData.features.map((f) => ({ value: f }))
                     : [{ value: "" }],
@@ -181,10 +170,9 @@ export function PlanModal({
                 sub_account_type: "",
                 description: "",
                 price: "",
-                currency: "NGN",
+                currency: "USD",
                 duration: 30,
                 status: true,
-                rc_product_id_ios: "",
                 features: [{ value: "" }],
             });
         }
@@ -339,7 +327,7 @@ export function PlanModal({
                             <CurrencySelect
                                 name="currency"
                                 label="Currency"
-                                placeholder="NGN"
+                                placeholder="USD"
                                 disabled={isSubmitting}
                             />
                         </div>
@@ -466,26 +454,6 @@ export function PlanModal({
                                 {errors.features.message}
                             </p>
                         )}
-                    </div>
-
-                    <div className="space-y-4 pt-4 border-t border-[#EAECF0]">
-                        <h3 className="text-sm font-semibold text-[#101828]">
-                            RevenueCat Configuration
-                        </h3>
-                        <div className="space-y-2">
-                            <Label
-                                htmlFor="rc_product_id_ios"
-                                className="text-sm font-medium text-[#344054]"
-                            >
-                                Product ID
-                            </Label>
-                            <Input
-                                id="rc_product_id_ios"
-                                placeholder="e.g. fjr_premium_monthly"
-                                {...register("rc_product_id_ios")}
-                                className="h-11 bg-white border-[#EAECF0]"
-                            />
-                        </div>
                     </div>
 
                     <div className="space-y-2">

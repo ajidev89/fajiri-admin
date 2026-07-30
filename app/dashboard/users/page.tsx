@@ -339,13 +339,13 @@ function MembersTab({ roles }: { roles: Role[] }) {
             },
         },
         {
-            accessorKey: "last_login_at",
-            header: "Last Active",
+            id: "active_plan",
+            header: "Active Plan",
             cell: ({ row }) => {
-                const date = row.getValue("last_login_at") as string;
+                const planName = row.original.plan?.name;
                 return (
                     <span className="text-[#475467]">
-                        {date ? format(new Date(date), "dd-MM-yyyy") : "-"}
+                        {planName ? planName : "-"}
                     </span>
                 );
             },

@@ -292,7 +292,7 @@ export default function DashboardPage() {
                                         tickLine={false}
                                         tick={{ fill: "#667085", fontSize: 11 }}
                                         tickFormatter={(value) =>
-                                            `₦${(value / 1000).toFixed(0)}k`
+                                            `$${(value / 1000).toFixed(0)}k`
                                         }
                                     />
                                     <Tooltip
@@ -371,7 +371,7 @@ export default function DashboardPage() {
                                 </ResponsiveContainer>
                                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                                     <span className="text-xl font-bold text-[#101828]">
-                                        ₦{totalCampaignRaised.toLocaleString()}
+                                        ${totalCampaignRaised.toLocaleString()}
                                     </span>
                                 </div>
                             </div>
@@ -394,7 +394,7 @@ export default function DashboardPage() {
                                             </span>
                                         </div>
                                         <span className="text-sm font-bold text-[#101828]">
-                                            ₦{item.value.toLocaleString()}
+                                            ${item.value.toLocaleString()}
                                         </span>
                                     </div>
                                 ))}

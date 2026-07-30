@@ -27,7 +27,7 @@ export interface TopPerformingCampaignsResponse {
 }
 
 export interface DisbursementAnalyticsResponse {
-    available_funds_ngn: number;
+    available_funds_usd: number;
     pending_disbursements: {
         count: number;
         amounts: Record<string, number>;

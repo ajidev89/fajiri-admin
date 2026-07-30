@@ -80,6 +80,15 @@ export interface User {
     needs?: any[];
     campaigns_count?: number;
     needs_count?: number;
+    plan?: {
+        name: string;
+        price: string;
+        currency: string;
+        started_at: string;
+        expires_at: string;
+        status: string;
+        auto_renew: boolean;
+    } | null;
 }
 
 export interface AuthToken {

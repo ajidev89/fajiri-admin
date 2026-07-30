@@ -51,8 +51,19 @@ async function handleResponse<T>(response: Response): Promise<T> {
             }
         }
         const error = await response.json().catch(() => ({}));
+        
+        let errorMessage = error.message;
+        if (error.errors && typeof error.errors === 'object') {
+            const firstKey = Object.keys(error.errors)[0];
+            if (firstKey && Array.isArray(error.errors[firstKey])) {
+                errorMessage = error.errors[firstKey][0];
+            } else if (firstKey && typeof error.errors[firstKey] === 'string') {
+                errorMessage = error.errors[firstKey];
+            }
+        }
+
         throw new Error(
-            error.message || `Request failed with status ${response.status}`,
+            errorMessage || `Request failed with status ${response.status}`,
         );
     }
     return response.json();

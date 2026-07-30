@@ -31,7 +31,6 @@ const fundraiserSchema = z.object({
     first_name: z.string().min(1, "First name is required"),
     last_name: z.string().min(1, "Last name is required"),
     email: z.string().email("Invalid email address"),
-    username: z.string().optional(),
     password: z.string().min(8, "Password must be at least 8 characters").optional().or(z.literal("")),
     country_id: z.string().min(1, "Country is required"),
     currency: z.string().min(1, "Currency is required"),
@@ -64,10 +63,9 @@ export function FundraiserModal({
             first_name: "",
             last_name: "",
             email: "",
-            username: "",
             password: "",
             country_id: "",
-            currency: "NGN",
+            currency: "USD",
         },
     });
 
@@ -87,7 +85,6 @@ export function FundraiserModal({
             return fundraiserService.createFundraiser({
                 ...data,
                 password: data.password || undefined,
-                username: data.username || undefined,
             });
         },
         onSuccess: () => {
@@ -173,34 +170,22 @@ export function FundraiserModal({
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium text-[#344054]">
-                                Username (Optional)
-                            </Label>
-                            <Input
-                                placeholder="Enter username"
-                                {...register("username")}
-                                className="h-11 bg-white border-[#EAECF0]"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium text-[#344054]">
-                                Password (Optional)
-                            </Label>
-                            <Input
-                                type="password"
-                                placeholder="••••••••"
-                                {...register("password")}
-                                className={cn(
-                                    "h-11 bg-white border-[#EAECF0]",
-                                    errors.password && "border-red-500"
-                                )}
-                            />
-                            {errors.password && (
-                                <p className="text-xs text-red-500">{errors.password.message}</p>
+                    <div className="space-y-2">
+                        <Label className="text-sm font-medium text-[#344054]">
+                            Password (Optional)
+                        </Label>
+                        <Input
+                            type="password"
+                            placeholder="••••••••"
+                            {...register("password")}
+                            className={cn(
+                                "h-11 bg-white border-[#EAECF0]",
+                                errors.password && "border-red-500"
                             )}
-                        </div>
+                        />
+                        {errors.password && (
+                            <p className="text-xs text-red-500">{errors.password.message}</p>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

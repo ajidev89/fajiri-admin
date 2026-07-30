@@ -20,6 +20,7 @@ import {
     XCircle,
     ShieldCheck,
     History,
+    Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -247,39 +248,38 @@ export default function UserDetailsPage() {
                                 <InfoItem label="Member ID" value={user?.member_id ?? ""} />
                                 <InfoItem
                                     label="Account Plan"
-                                    value={user?.account_type ?? ""}
+                                    value={user?.account_type ? user.account_type.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : "-"}
                                 />
-                                {/* <InfoItem
-                                    label="Expiration Date"
-                                    value={user?.expiration_date}
-                                /> */}
+                                <InfoItem label="Gender" value={user?.profile?.gender ?? "-"} />
+                                <InfoItem label="Date of Birth" value={user?.profile?.dob ? dayjs(user.profile.dob).format("DD MMM YYYY") : "-"} />
                                 <InfoItem
                                     label="Phone Number"
-                                    value={user?.phone ?? ""}
+                                    value={user?.phone ?? "-"}
                                 />
+                                <InfoItem label="Address" value={user?.profile?.address ?? "-"} />
+                                <InfoItem label="Occupation" value={user?.profile?.occupation ?? "-"} />
                                 <InfoItem
                                     label="Role"
-                                    value={user?.role?.name ?? ""}
+                                    value={user?.role?.name ?? "-"}
                                 />
                                 <InfoItem
                                     label="Date Joined"
-                                    value={user?.created_at ?? ""}
+                                    value={user?.created_at ? dayjs(user.created_at).format("DD MMM YYYY") : "-"}
                                 />
                                 <InfoItem
-                                    label="Last Active"
-                                    value={user?.last_login_at ?? ""}
+                                    label="Active Plan"
+                                    value={user?.plan?.name ?? "-"}
                                 />
-                            </div>
-                        </div>
-
-                        {/* Profile Status Card */}
-                        <div className="bg-white rounded-3xl border border-[#EAECF0] shadow-sm overflow-hidden">
-                            <div className="px-8 py-5 border-b border-[#EAECF0]">
-                                <h4 className="font-bold text-[#101828]">
-                                    Profile Status
-                                </h4>
-                            </div>
-                            <div className="p-8 space-y-6">
+                                <InfoItem
+                                    label="Plan Expiry Date"
+                                    value={user?.plan?.expires_at ? dayjs(user.plan.expires_at).format("DD MMM YYYY") : "-"}
+                                />
+                                {user?.referral_code && (
+                                    <CopyableInfoItem 
+                                        label="Referral Link" 
+                                        value={`https://app.fajiri.com/register?ref=${user.referral_code}`} 
+                                    />
+                                )}
                                 <StatusItem
                                     label="Status"
                                     value={user?.status ?? ""}
@@ -299,17 +299,6 @@ export default function UserDetailsPage() {
                                         <CheckCircle2 className="h-4 w-4 text-green-500" />
                                     }
                                 />
-                                <StatusItem
-                                    label="KYC Verified"
-                                    value="Yes"
-                                    icon={
-                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                    }
-                                />
-                                 <InfoItem
-                                     label="Last Password Change"
-                                     value={(user as any)?.last_password_change ?? ""}
-                                 />
                             </div>
                         </div>
                     </div>
@@ -561,6 +550,31 @@ function StatusItem({
             <div className="flex items-center gap-2">
                 {icon}
                 <span className="font-bold text-[#101828]">{value}</span>
+            </div>
+        </div>
+    );
+}
+
+function CopyableInfoItem({ label, value }: { label: string; value: string }) {
+    const handleCopy = () => {
+        navigator.clipboard.writeText(value);
+        toast.success("Copied to clipboard");
+    };
+
+    return (
+        <div className="flex items-center justify-between text-sm">
+            <span className="text-[#667085]">{label}:</span>
+            <div className="flex items-center gap-2">
+                <span className="font-bold text-[#101828] text-right truncate max-w-[200px]" title={value}>
+                    {value}
+                </span>
+                <button
+                    onClick={handleCopy}
+                    className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors"
+                    title="Copy to clipboard"
+                >
+                    <Copy className="h-4 w-4" />
+                </button>
             </div>
         </div>
     );

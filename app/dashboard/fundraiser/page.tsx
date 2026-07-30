@@ -106,7 +106,7 @@ export default function FundraiserPage() {
             header: "Wallet Balance",
             cell: ({ row }) => (
                 <span className="text-[#475467] font-medium">
-                    {row.original.wallet?.currency || "NGN"}{" "}
+                    {row.original.wallet?.currency || "USD"}{" "}
                     {Number(row.original.wallet?.balance || 0).toLocaleString()}
                 </span>
             ),

@@ -13,11 +13,6 @@ export interface Plan {
     duration: number;
     features: string[];
     status: boolean;
-    rc_entitlement_id?: string;
-    rc_offering_id?: string;
-    rc_package_id?: string;
-    rc_product_id_ios?: string;
-    rc_product_id_android?: string;
 }
 
 export interface UpdatePlanPayload {
@@ -31,7 +26,6 @@ export interface UpdatePlanPayload {
     currency?: string;
     features?: string[];
     status?: boolean;
-    rc_product_id_ios?: string | null;
 }
 
 export interface SubscribeToPlanPayload {

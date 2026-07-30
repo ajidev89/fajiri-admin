@@ -62,7 +62,7 @@ export function NeedModal({
             age: "",
             location: "",
             urgency: "medium",
-            currency: "NGN",
+            currency: "USD",
             amount: "",
             description: "",
         },
@@ -133,7 +133,7 @@ export function NeedModal({
                 age: initialData.age.toString(),
                 location: initialData.location,
                 urgency: initialData.urgency,
-                currency: initialData.currency || "NGN",
+                currency: initialData.currency || "USD",
                 amount: initialData.amount?.toString() || "",
                 description: initialData.description,
             });
@@ -143,7 +143,7 @@ export function NeedModal({
                 age: "",
                 location: "",
                 urgency: "medium",
-                currency: "NGN",
+                currency: "USD",
                 amount: "",
                 description: "",
             });

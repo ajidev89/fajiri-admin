@@ -8,39 +8,39 @@ interface DisbursementStatsProps {
 }
 
 export function DisbursementStats({ stats, isLoading }: DisbursementStatsProps) {
-    const formatCurrency = (amount: number, currency: string = "₦") => {
+    const formatCurrency = (amount: number, currency: string = "$") => {
         return `${currency}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
-    const getAmountForNgn = (amounts: Record<string, number>) => {
-        return amounts["NGN"] || 0;
+    const getAmountForUsd = (amounts: Record<string, number>) => {
+        return amounts["USD"] || 0;
     };
 
     const data = [
         {
             title: "Available Funds",
-            value: stats ? formatCurrency(stats.available_funds_ngn) : "₦0.00",
+            value: stats ? formatCurrency(stats.available_funds_usd) : "$0.00",
             icon: Wallet,
             bgColor: "bg-[#0E3B5D]/10",
             iconColor: "text-[#0E3B5D]",
         },
         {
             title: "Pending Disbursements",
-            value: stats ? formatCurrency(getAmountForNgn(stats.pending_disbursements.amounts)) : "₦0.00",
+            value: stats ? formatCurrency(getAmountForUsd(stats.pending_disbursements.amounts)) : "$0.00",
             icon: MinusCircle,
             bgColor: "bg-[#344054]/10",
             iconColor: "text-[#344054]",
         },
         {
             title: "Approved Disbursements",
-            value: stats ? formatCurrency(getAmountForNgn(stats.approved_disbursements.amounts)) : "₦0.00",
+            value: stats ? formatCurrency(getAmountForUsd(stats.approved_disbursements.amounts)) : "$0.00",
             icon: CheckCircle,
             bgColor: "bg-[#12B76A]/10",
             iconColor: "text-[#12B76A]",
         },
         {
             title: "Rejected Disbursements",
-            value: stats ? formatCurrency(getAmountForNgn(stats.rejected_disbursements.amounts)) : "₦0.00",
+            value: stats ? formatCurrency(getAmountForUsd(stats.rejected_disbursements.amounts)) : "$0.00",
             icon: XCircle,
             bgColor: "bg-[#F04438]/10",
             iconColor: "text-[#F04438]",
