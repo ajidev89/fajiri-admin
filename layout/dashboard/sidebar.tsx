@@ -48,7 +48,8 @@ const bottomSidebarItems = [
     {
         label: "Help & Support",
         icon: HelpCircle,
-        href: "/dashboard/help-support",
+        href: "https://dashboard.tawk.to/login",
+        target: "_blank",
     },
     { label: "Logout", icon: LogOut, href: "/logout" },
 ];
@@ -222,6 +223,7 @@ export function Sidebar() {
                         <Link
                             key={item.label}
                             href={item.href}
+                            target={"target" in item ? item.target : undefined}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
                                 isActive
