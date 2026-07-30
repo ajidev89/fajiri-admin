@@ -277,7 +277,7 @@ export default function UserDetailsPage() {
                                 {user?.referral_code && (
                                     <CopyableInfoItem 
                                         label="Referral Link" 
-                                        value={`https://app.fajiri.com/register?ref=${user.referral_code}`} 
+                                        value={`https://app.fajiri.org/register?ref=${user.referral_code}`} 
                                     />
                                 )}
                                 <StatusItem
