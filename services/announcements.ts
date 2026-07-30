@@ -17,7 +17,7 @@ export interface CreateAnnouncementPayload {
 
 export const announcementService = {
     getAnnouncements(params?: { page?: number; per_page?: number }) {
-        return apiClient.get<PaginatedResponse<Announcement>>("/admin/announcements", {
+        return apiClient.get<ApiResponse<PaginatedResponse<Announcement>>>("/admin/announcements", {
             params,
         });
     },
