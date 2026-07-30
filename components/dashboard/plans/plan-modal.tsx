@@ -205,7 +205,7 @@ export function PlanModal({
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-none rounded-3xl">
                 <DialogHeader className="p-6 border-b border-[#EAECF0]">
                     <DialogTitle className="text-xl font-bold text-[#101828]">
-                        {isEdit ? "Edit Plan" : "Create Subscription Plan"}
+                        {isEdit ? "Edit Plan" : "Create Contribution Plan"}
                     </DialogTitle>
                 </DialogHeader>
                 <FormProvider {...methods}>

@@ -158,7 +158,7 @@ export default function PollsPage() {
                                 router.push(`/dashboard/content/polls/${row.original.id}`)
                             }
                         >
-                            View Summary
+                            View
                         </DropdownMenuItem>
                         <DropdownMenuItem
                             onClick={() =>
