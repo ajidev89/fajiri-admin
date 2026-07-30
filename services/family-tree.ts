@@ -3,6 +3,7 @@ import { apiClient, ApiResponse } from "./api-client";
 export interface FamilyTreeNode {
     id: string;
     user_id: string;
+    added_by?: string;
     parent_id: string | null;
     full_name: string;
     dob: string | null;

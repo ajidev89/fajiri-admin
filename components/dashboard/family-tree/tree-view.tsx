@@ -95,6 +95,13 @@ export function FamilyListView() {
             ),
         },
         {
+            accessorKey: "added_by",
+            header: "Added By",
+            cell: ({ row }) => (
+                <span className="text-[#667085]">{row.getValue("added_by") || "-"}</span>
+            ),
+        },
+        {
             accessorKey: "is_alive",
             header: "Status",
             cell: ({ row }) => {
