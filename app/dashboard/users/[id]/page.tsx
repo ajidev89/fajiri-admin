@@ -76,10 +76,16 @@ export default function UserDetailsPage() {
         queryFn: () => usersService.getUserTransactions(id),
     });
 
+    const { data: referralsRes, isLoading: isReferralsLoading } = useQuery({
+        queryKey: ["user-referrals", id],
+        queryFn: () => usersService.getUserReferrals(id),
+    });
+
     const user = userRes?.data;
     const donatedCampaigns = campaignsRes?.data || [];
     const audits = auditsRes?.data || [];
     const transactions = transactionsRes?.data || [];
+    const referrals = referralsRes?.data || [];
 
     const isSuspended = user?.status === "suspended";
 
@@ -332,6 +338,12 @@ export default function UserDetailsPage() {
                                     >
                                         Financial
                                     </TabsTrigger>
+                                    <TabsTrigger
+                                        value="referrals"
+                                        className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
+                                    >
+                                        Humans Reached
+                                    </TabsTrigger>
                                 </TabsList>
                             </div>
 
@@ -470,6 +482,53 @@ export default function UserDetailsPage() {
                                 ) : (
                                     <div className="flex items-center justify-center h-64 text-[#667085]">
                                         No financial activity recorded.
+                                    </div>
+                                )}
+                            </TabsContent>
+
+                            <TabsContent
+                                value="referrals"
+                                className="flex-1 p-8 focus-visible:ring-0"
+                            >
+                                {isReferralsLoading ? (
+                                    <div className="flex items-center justify-center h-40">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                    </div>
+                                ) : referrals.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {referrals.map((referral: any) => (
+                                            <div
+                                                key={referral.id}
+                                                className="flex items-start gap-4 p-4 rounded-xl border border-[#EAECF0] hover:bg-[#F9FAFB] transition-colors"
+                                            >
+                                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                                    <User className="h-5 w-5 text-primary" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-[#101828]">
+                                                        {referral.profile?.first_name} {referral.profile?.last_name}
+                                                    </p>
+                                                    <p className="text-xs text-[#667085] truncate">
+                                                        {referral.email}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right whitespace-nowrap">
+                                                    <span className="text-xs font-medium text-[#667085]">
+                                                        {dayjs(referral.created_at).format("DD MMM YYYY")}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-40 text-center">
+                                        <User className="h-12 w-12 text-[#98A2B3] mb-4 opacity-50" />
+                                        <h5 className="text-[#101828] font-medium mb-1">
+                                            No Humans Reached
+                                        </h5>
+                                        <p className="text-sm text-[#667085]">
+                                            No referrals recorded.
+                                        </p>
                                     </div>
                                 )}
                             </TabsContent>

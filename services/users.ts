@@ -59,6 +59,11 @@ export const usersService = {
             `/users/${userId}/transactions`,
         );
     },
+    getUserReferrals(userId: string) {
+        return apiClient.get<ApiResponse<User[]>>(
+            `/users/${userId}/referrals`,
+        );
+    },
 
     updateUser(
         userId: string,
