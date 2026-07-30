@@ -20,6 +20,7 @@ import {
     Library,
     Trophy,
     Network,
+    Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Cookies from "js-cookie";
@@ -40,6 +41,7 @@ const sidebarItems = [
     { label: "Content Management", icon: FileText, href: "/dashboard/content" },
     { label: "Leaderboard", icon: Trophy, href: "/dashboard/leaderboard" },
     { label: "Family Tree", icon: Network, href: "/dashboard/family-tree" },
+    { label: "Announcements", icon: Bell, href: "/dashboard/announcements" },
     { label: "Disbursements", icon: Receipt, href: "/dashboard/disbursements" },
 ];
 
