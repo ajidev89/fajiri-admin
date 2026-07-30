@@ -5,12 +5,28 @@ import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { useQuery } from "@tanstack/react-query";
 import { leaderboardService, LeaderboardMember } from "@/services/leaderboard";
+import { countryService } from "@/services/countries";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 export function LeaderboardView() {
+    const [selectedCountryId, setSelectedCountryId] = React.useState<string>("all");
+
+    const { data: countriesRes } = useQuery({
+        queryKey: ["countries"],
+        queryFn: () => countryService.getCountries(),
+    });
+    const countries = countriesRes?.data || [];
+
     const { data: leaderboardRes, isLoading } = useQuery({
-        queryKey: ["leaderboard"],
-        queryFn: () => leaderboardService.getLeaderboard(),
+        queryKey: ["leaderboard", selectedCountryId],
+        queryFn: () => leaderboardService.getLeaderboard(selectedCountryId !== "all" ? { country_id: selectedCountryId } : undefined),
     });
 
     // If the backend doesn't sort them, we should sort by total_engagement descending.
@@ -127,6 +143,27 @@ export function LeaderboardView() {
                     <p className="text-xs sm:text-sm text-[#475467]">
                         View the top engaged members in the platform.
                     </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Select
+                        value={selectedCountryId}
+                        onValueChange={setSelectedCountryId}
+                    >
+                        <SelectTrigger className="w-[180px] bg-white">
+                            <SelectValue placeholder="Filter by Country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Countries</SelectItem>
+                            {countries.map((country) => (
+                                <SelectItem
+                                    key={country.id}
+                                    value={country.id.toString()}
+                                >
+                                    {country.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 

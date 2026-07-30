@@ -3,11 +3,12 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import DashboardLayout from "@/layout/dashboard";
-import { MoreHorizontal, Plus, Edit2, Trash2, CheckCircle2, XCircle } from "lucide-react";
+import { MoreHorizontal, Plus, Edit2, Trash2, CheckCircle2, XCircle, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as React from "react";
 import { useState } from "react";
 import { PlanModal } from "@/components/dashboard/plans/plan-modal";
+import { PlanPreviewModal } from "@/components/dashboard/plans/plan-preview-modal";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function PlansPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
     const queryClient = useQueryClient();
 
@@ -46,6 +48,11 @@ export default function PlansPage() {
     const handleEdit = (plan: Plan) => {
         setSelectedPlan(plan);
         setIsModalOpen(true);
+    };
+
+    const handlePreview = (plan: Plan) => {
+        setSelectedPlan(plan);
+        setIsPreviewModalOpen(true);
     };
 
     const handleCreate = () => {
@@ -129,6 +136,12 @@ export default function PlansPage() {
                         <DropdownMenuContent align="end" className="w-[160px] bg-white">
                             <DropdownMenuItem 
                                 className="gap-2 text-sm text-[#344054] cursor-pointer"
+                                onClick={() => handlePreview(plan)}
+                            >
+                                <Eye className="h-4 w-4" /> Preview
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                                className="gap-2 text-sm text-[#344054] cursor-pointer"
                                 onClick={() => handleEdit(plan)}
                             >
                                 <Edit2 className="h-4 w-4" /> Edit Plan
@@ -173,6 +186,12 @@ export default function PlansPage() {
                     isOpen={isModalOpen}
                     onOpenChange={setIsModalOpen}
                     initialData={selectedPlan}
+                />
+
+                <PlanPreviewModal
+                    isOpen={isPreviewModalOpen}
+                    onOpenChange={setIsPreviewModalOpen}
+                    plan={selectedPlan}
                 />
 
                 {/* Table Section */}

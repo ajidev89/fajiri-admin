@@ -64,21 +64,50 @@ export function Sidebar() {
     const { isOpen, setIsOpen } = useSidebar();
     const clearAuthData = useAuthStore((state) => state.clearAuthData);
 
-    const isFundraiser = user?.role.slug === "fundraiser";
+    const checkPermission = (itemLabel: string) => {
+        if (!user || !user.role) return false;
+        
+        // Super admin sees everything
+        if (user.role.slug === 'super-admin') return true;
+
+        // Fundraiser custom logic
+        if (user.role.slug === 'fundraiser') {
+            return ["Dashboard", "Campaigns", "Needs"].includes(itemLabel);
+        }
+
+        // Role-based permissions mapping
+        const permissionMap: Record<string, string> = {
+            "Dashboard": "", 
+            "Campaigns": "campaign_management",
+            "Needs": "campaign_management",
+            "Plans": "membership_management",
+            "Donations": "donation_management",
+            "Users": "user_management",
+            "Fundraiser": "user_management",
+            "Content Management": "system_settings",
+            "Leaderboard": "reports_analytics",
+            "Family Tree": "user_management",
+            "Disbursements": "financial_records",
+        };
+
+        const requiredPermission = permissionMap[itemLabel];
+        if (!requiredPermission) return true; // Items without specific permission are accessible
+
+        return user.role.permissions?.some(p => p.name === requiredPermission) ?? false;
+    };
 
     const filteredSidebarItems = React.useMemo(() => {
-        if (!isFundraiser) return sidebarItems;
-        return sidebarItems.filter((item) =>
-            ["Dashboard", "Campaigns", "Needs"].includes(item.label),
-        );
-    }, [isFundraiser]);
+        return sidebarItems.filter((item) => checkPermission(item.label));
+    }, [user]);
 
     const filteredBottomItems = React.useMemo(() => {
-        if (!isFundraiser) return bottomSidebarItems;
-        return bottomSidebarItems.filter((item) =>
-            ["Settings", "Logout"].includes(item.label),
-        );
-    }, [isFundraiser]);
+        if (user?.role?.slug === 'fundraiser') {
+            return bottomSidebarItems.filter((item) =>
+                ["Settings", "Logout"].includes(item.label),
+            );
+        }
+        return bottomSidebarItems;
+    }, [user]);
 
     const logoutMutation = useMutation({
         mutationFn: () => authService.logout(),
