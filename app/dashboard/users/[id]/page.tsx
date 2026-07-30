@@ -237,11 +237,11 @@ export default function UserDetailsPage() {
                             </div>
                         </div>
 
-                        {/* Basic Information Card */}
+                        {/* User Information Card */}
                         <div className="bg-white rounded-3xl border border-[#EAECF0] shadow-sm overflow-hidden">
                             <div className="px-8 py-5 border-b border-[#EAECF0]">
                                 <h4 className="font-bold text-[#101828]">
-                                    Basic Information
+                                    User Information
                                 </h4>
                             </div>
                             <div className="p-8 space-y-6">
