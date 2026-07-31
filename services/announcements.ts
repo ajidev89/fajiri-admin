@@ -13,6 +13,7 @@ export interface CreateAnnouncementPayload {
     title: string;
     content: string;
     image_url?: string;
+    target_audience?: string[];
 }
 
 export const announcementService = {
