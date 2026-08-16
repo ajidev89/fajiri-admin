@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { OtpInput } from "@/components/ui/otp-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { 
@@ -784,20 +785,16 @@ export function DisbursementModal({
                                 <Lock className="h-7 w-7" />
                             </div>
                             <div>
-                                <h3 className="text-base font-bold text-slate-900">Enter Security Verification Code</h3>
+                                <h3 className="text-base font-bold text-slate-900">Enter Code</h3>
                                 <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
                                     We sent a 6-digit confirmation code to {maskedEmail || "your registered email"}.
                                 </p>
                             </div>
 
-                            <div className="max-w-xs mx-auto space-y-3">
-                                <Input
-                                    type="text"
-                                    maxLength={6}
-                                    placeholder="••••••"
+                            <div className="max-w-xs mx-auto space-y-4">
+                                <OtpInput
                                     value={formData.otp}
-                                    onChange={(e) => handleInputChange("otp", e.target.value)}
-                                    className="h-14 text-center text-2xl font-mono tracking-widest font-black rounded-2xl border-2 border-[#0E3B5D]"
+                                    onChange={(val) => handleInputChange("otp", val)}
                                 />
 
                                 <div className="flex items-center justify-between text-xs text-slate-500">
