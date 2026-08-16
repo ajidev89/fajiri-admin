@@ -104,14 +104,34 @@ const columns: ColumnDef<Campaign>[] = [
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[160px]">
-                        <DropdownMenuItem className="gap-2 text-sm text-[#344054]">
-                            <Eye className="h-4 w-4" /> View Details
+                    <DropdownMenuContent align="end" className="w-[190px] bg-white rounded-xl shadow-lg border border-slate-100 p-1">
+                        <DropdownMenuItem
+                            className="gap-2 text-xs font-bold text-emerald-600 cursor-pointer"
+                            onClick={() => {
+                                window.dispatchEvent(
+                                    new CustomEvent("disburse-campaign", {
+                                        detail: campaign,
+                                    }),
+                                );
+                            }}
+                        >
+                            <Plus className="h-3.5 w-3.5" /> Disburse Funds
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                            className="gap-2 text-sm text-[#344054]"
+                            className="gap-2 text-xs font-medium text-slate-700 cursor-pointer"
                             onClick={() => {
-                                // This will be handled by the parent component's state
+                                window.dispatchEvent(
+                                    new CustomEvent("history-campaign", {
+                                        detail: campaign,
+                                    }),
+                                );
+                            }}
+                        >
+                            <Eye className="h-3.5 w-3.5 text-blue-500" /> Financial Activity
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            className="gap-2 text-xs text-[#344054] cursor-pointer"
+                            onClick={() => {
                                 window.dispatchEvent(
                                     new CustomEvent("edit-campaign", {
                                         detail: campaign,
@@ -119,10 +139,19 @@ const columns: ColumnDef<Campaign>[] = [
                                 );
                             }}
                         >
-                            <Edit2 className="h-4 w-4" /> Edit Campaign
+                            <Edit2 className="h-3.5 w-3.5" /> Edit Campaign
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2 text-sm text-red-600">
-                            <Trash2 className="h-4 w-4" /> Delete
+                        <DropdownMenuItem
+                            className="gap-2 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                            onClick={() => {
+                                window.dispatchEvent(
+                                    new CustomEvent("delete-campaign", {
+                                        detail: campaign,
+                                    }),
+                                );
+                            }}
+                        >
+                            <Trash2 className="h-3.5 w-3.5 text-red-600" /> Delete Campaign
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -131,11 +160,19 @@ const columns: ColumnDef<Campaign>[] = [
     },
 ];
 
+import { DisbursementModal } from "@/components/dashboard/disbursements/disbursement-modal";
+import { DisbursementHistoryModal } from "@/components/dashboard/disbursements/disbursement-history-modal";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+
 export default function CampaignsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
-        null,
-    );
+    const [isDisburseModalOpen, setIsDisburseModalOpen] = useState(false);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+    const [activeDisbursementCampaign, setActiveDisbursementCampaign] = useState<Campaign | null>(null);
+
+    const queryClient = useQueryClient();
     const { user } = useAuthStore();
     const isFundraiser = user?.role.slug === "fundraiser";
 
@@ -144,13 +181,38 @@ export default function CampaignsPage() {
         queryFn: () => campaignService.listCampaigns(isFundraiser ? { added_by: user?.id || "" } : {}),
     });
 
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => campaignService.deleteCampaign(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+            toast.success("Campaign deleted successfully");
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Failed to delete campaign");
+        },
+    });
+
     const campaigns = campaignsRes?.data || [];
 
-    // Using an event listener approach for the column-level edit button
-    // Alternatively, we could pass the edit function into the columns definition
     const handleEdit = (campaign: Campaign) => {
         setSelectedCampaign(campaign);
         setIsModalOpen(true);
+    };
+
+    const handleDisburse = (campaign: Campaign) => {
+        setActiveDisbursementCampaign(campaign);
+        setIsDisburseModalOpen(true);
+    };
+
+    const handleHistory = (campaign: Campaign) => {
+        setActiveDisbursementCampaign(campaign);
+        setIsHistoryModalOpen(true);
+    };
+
+    const handleDelete = (campaign: Campaign) => {
+        if (confirm(`Are you sure you want to delete "${campaign.title}"? This action cannot be undone.`)) {
+            deleteMutation.mutate(campaign.id);
+        }
     };
 
     const handleCreate = () => {
@@ -158,11 +220,24 @@ export default function CampaignsPage() {
         setIsModalOpen(true);
     };
 
-    // Listen for edit events from the table row
+    // Listen for events from the table row
     React.useEffect(() => {
         const onEdit = (e: any) => handleEdit(e.detail);
+        const onDisburse = (e: any) => handleDisburse(e.detail);
+        const onHistory = (e: any) => handleHistory(e.detail);
+        const onDelete = (e: any) => handleDelete(e.detail);
+
         window.addEventListener("edit-campaign", onEdit);
-        return () => window.removeEventListener("edit-campaign", onEdit);
+        window.addEventListener("disburse-campaign", onDisburse);
+        window.addEventListener("history-campaign", onHistory);
+        window.addEventListener("delete-campaign", onDelete);
+
+        return () => {
+            window.removeEventListener("edit-campaign", onEdit);
+            window.removeEventListener("disburse-campaign", onDisburse);
+            window.removeEventListener("history-campaign", onHistory);
+            window.removeEventListener("delete-campaign", onDelete);
+        };
     }, []);
 
     return (
@@ -217,6 +292,21 @@ export default function CampaignsPage() {
                             isOpen={isModalOpen}
                             onOpenChange={setIsModalOpen}
                             initialData={selectedCampaign}
+                        />
+
+                        {/* Modal-based Disburse Funds popup */}
+                        <DisbursementModal
+                            isOpen={isDisburseModalOpen}
+                            onOpenChange={setIsDisburseModalOpen}
+                            campaignId={activeDisbursementCampaign?.id}
+                        />
+
+                        {/* Modal-based Financial Activity History */}
+                        <DisbursementHistoryModal
+                            isOpen={isHistoryModalOpen}
+                            onOpenChange={setIsHistoryModalOpen}
+                            campaignId={activeDisbursementCampaign?.id || ""}
+                            campaignTitle={activeDisbursementCampaign?.title}
                         />
 
                         {/* Stats Cards */}

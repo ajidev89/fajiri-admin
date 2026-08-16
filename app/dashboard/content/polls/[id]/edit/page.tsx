@@ -32,7 +32,7 @@ export default function EditPollPage() {
             queryClient.invalidateQueries({ queryKey: ["admin-polls"] });
             router.push("/dashboard/content/polls");
         },
-        onError: () => toast.error("Failed to update poll"),
+        onError: (error: any) => toast.error(error?.message || "Failed to update poll"),
     });
 
     const deleteMutation = useMutation({
@@ -42,7 +42,7 @@ export default function EditPollPage() {
             queryClient.invalidateQueries({ queryKey: ["admin-polls"] });
             router.push("/dashboard/content/polls");
         },
-        onError: () => toast.error("Failed to delete poll"),
+        onError: (error: any) => toast.error(error?.message || "Failed to delete poll"),
     });
 
     const poll = data?.data;
@@ -57,7 +57,7 @@ export default function EditPollPage() {
             duration_hours: data.duration_hours,
             options: data.options?.map((o, i) => ({ label: o.label, order: i })),
         };
-        await updateMutation.mutateAsync(payload);
+        updateMutation.mutate(payload);
     };
 
     // Build defaultValues from existing poll

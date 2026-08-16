@@ -1,18 +1,25 @@
 import { apiClient, ApiResponse } from "./api-client";
 
 export interface Plan {
-    id: string;
+    id: string | number;
     name: string;
-    level: string;
-    account_type: string;
+    level?: string;
+    account_type?: string;
     sub_account_type?: string;
     slug: string;
-    description: string;
-    price: string;
+    description?: string;
+    price: string | number;
     currency: string;
+    base_price?: string | number;
+    base_currency?: string;
     duration: number;
     features: string[];
     status: boolean;
+    stripe_price_id?: string | null;
+    stripe_product_id?: string | null;
+    paystack_plan_code?: string | null;
+    created_at?: string;
+    updated_at?: string;
 }
 
 export interface UpdatePlanPayload {
@@ -22,10 +29,13 @@ export interface UpdatePlanPayload {
     account_type?: string;
     sub_account_type?: string;
     description?: string;
-    price?: string;
+    price?: string | number;
     currency?: string;
     features?: string[];
     status?: boolean;
+    stripe_price_id?: string | null;
+    stripe_product_id?: string | null;
+    paystack_plan_code?: string | null;
 }
 
 export interface SubscribeToPlanPayload {
@@ -42,11 +52,11 @@ export const planService = {
         return apiClient.post<ApiResponse<Plan>>("/plans", payload);
     },
 
-    updatePlan(planId: string, payload: UpdatePlanPayload) {
+    updatePlan(planId: string | number, payload: UpdatePlanPayload) {
         return apiClient.put<ApiResponse<Plan>>(`/plans/${planId}`, payload);
     },
 
-    deletePlan(planId: string) {
+    deletePlan(planId: string | number) {
         return apiClient.delete<ApiResponse<null>>(`/plans/${planId}`);
     },
 

@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Eye, EyeOff, User } from "lucide-react";
+import { User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useMutation } from "@tanstack/react-query";
+import { otpService } from "@/services";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/auth-store";
+import { toast } from "sonner";
 
 const loginSchema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
@@ -16,7 +20,8 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function ForgetPasswordForm() {
-    const [showPassword, setShowPassword] = useState(false);
+    const router = useRouter();
+    const setAuthData = useAuthStore((state) => state.setAuthData);
 
     const {
         register,
@@ -26,8 +31,22 @@ export function ForgetPasswordForm() {
         resolver: zodResolver(loginSchema),
     });
 
+    const sendOtpMutation = useMutation({
+        mutationFn: (data: LoginFormValues) =>
+            otpService.sendOtp({ channel: "email", identifier: data.email }),
+        onSuccess: (_, variables) => {
+            // Store email for verify OTP step
+            setAuthData({} as any, variables.email);
+            toast.success("Verification code sent to your email");
+            router.push("/verify-otp");
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Failed to send verification code");
+        },
+    });
+
     const onSubmit = (data: LoginFormValues) => {
-        console.log("Form submitted:", data);
+        sendOtpMutation.mutate(data);
     };
 
     return (
@@ -54,6 +73,7 @@ export function ForgetPasswordForm() {
                         type="email"
                         {...register("email")}
                         className={errors.email ? "border-red-500" : ""}
+                        disabled={sendOtpMutation.isPending}
                     />
                     {errors.email && (
                         <p className="text-xs text-red-500">
@@ -65,9 +85,13 @@ export function ForgetPasswordForm() {
                 <Button
                     type="submit"
                     className="w-full bg-primary hover:bg-primary/90 text-white py-6"
+                    disabled={sendOtpMutation.isPending}
                 >
-
-                    Send OTP
+                    {sendOtpMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        "Send OTP"
+                    )}
                 </Button>
             </form>
         </div>

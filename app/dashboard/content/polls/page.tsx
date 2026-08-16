@@ -88,7 +88,7 @@ export default function PollsPage() {
             toast.success("Poll deleted successfully");
             queryClient.invalidateQueries({ queryKey: ["admin-polls"] });
         },
-        onError: () => toast.error("Failed to delete poll"),
+        onError: (error: any) => toast.error(error?.message || "Failed to delete poll"),
     });
 
     const polls: Poll[] = data?.data ?? [];

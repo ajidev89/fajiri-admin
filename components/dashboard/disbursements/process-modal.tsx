@@ -9,10 +9,20 @@ import {
     DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CloudUpload, X } from "lucide-react";
+import { 
+    ShieldCheck, 
+    ShieldAlert, 
+    AlertTriangle, 
+    CheckCircle2, 
+    XCircle, 
+    PauseCircle, 
+    FileText, 
+    ExternalLink, 
+    Building2, 
+    User,
+    DollarSign
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { disbursementService, Disbursement } from "@/services/disbursements";
@@ -22,7 +32,7 @@ interface ProcessModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     disbursement: Disbursement | null;
-    mode: "approve" | "reject" | null;
+    mode: "approve" | "hold" | "reject" | null;
 }
 
 export function ProcessDisbursementModal({
@@ -32,143 +42,170 @@ export function ProcessDisbursementModal({
     mode,
 }: ProcessModalProps) {
     const queryClient = useQueryClient();
-    const [proofFile, setProofFile] = React.useState<File | null>(null);
-    const [rejectReason, setRejectReason] = React.useState("");
+    const [actionReason, setActionReason] = React.useState("");
 
     const approveMutation = useMutation({
-        mutationFn: ({ id, file }: { id: string; file: File }) => {
-            return disbursementService.disburse(id, file);
-        },
+        mutationFn: (id: string) => disbursementService.approveDisbursement(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["disbursements"] });
+            queryClient.invalidateQueries({ queryKey: ["admin-disbursements"] });
             queryClient.invalidateQueries({ queryKey: ["disbursement-stats"] });
-            toast.success("Disbursement approved and completed");
+            toast.success("Disbursement approved and payment payout processed");
             onOpenChange(false);
-            resetForms();
+            setActionReason("");
         },
         onError: (error: any) => {
             toast.error(error.message || "Failed to approve disbursement");
         },
     });
 
-    const rejectMutation = useMutation({
+    const holdMutation = useMutation({
         mutationFn: ({ id, reason }: { id: string; reason: string }) => {
-            return disbursementService.reject(id, reason);
+            return disbursementService.holdDisbursement(id, reason);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["disbursements"] });
+            queryClient.invalidateQueries({ queryKey: ["admin-disbursements"] });
+            queryClient.invalidateQueries({ queryKey: ["disbursement-stats"] });
+            toast.success("Disbursement placed on compliance hold");
+            onOpenChange(false);
+            setActionReason("");
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Failed to place on hold");
+        },
+    });
+
+    const rejectMutation = useMutation({
+        mutationFn: ({ id, reason }: { id: string; reason: string }) => {
+            return disbursementService.rejectDisbursement(id, reason);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["disbursements"] });
+            queryClient.invalidateQueries({ queryKey: ["admin-disbursements"] });
             queryClient.invalidateQueries({ queryKey: ["disbursement-stats"] });
             toast.success("Disbursement request rejected");
             onOpenChange(false);
-            resetForms();
+            setActionReason("");
         },
         onError: (error: any) => {
             toast.error(error.message || "Failed to reject disbursement");
         },
     });
 
-    const resetForms = () => {
-        setProofFile(null);
-        setRejectReason("");
-    };
-
     const handleAction = () => {
         if (!disbursement) return;
 
         if (mode === "approve") {
-            if (!proofFile) {
-                toast.error("Please upload proof of payment");
+            approveMutation.mutate(disbursement.id);
+        } else if (mode === "hold") {
+            if (!actionReason.trim()) {
+                toast.error("Please provide a reason for placing this disbursement on hold");
                 return;
             }
-            approveMutation.mutate({ id: disbursement.id, file: proofFile });
+            holdMutation.mutate({ id: disbursement.id, reason: actionReason });
         } else if (mode === "reject") {
-            if (!rejectReason.trim()) {
+            if (!actionReason.trim()) {
                 toast.error("Please provide a reason for rejection");
                 return;
             }
-            rejectMutation.mutate({ id: disbursement.id, reason: rejectReason });
+            rejectMutation.mutate({ id: disbursement.id, reason: actionReason });
         }
     };
 
-    const isSubmitting = approveMutation.isPending || rejectMutation.isPending;
+    const isSubmitting = approveMutation.isPending || holdMutation.isPending || rejectMutation.isPending;
+    const riskLevel = disbursement?.risk_level?.toLowerCase() || "low";
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md border-none rounded-3xl">
-                <DialogHeader>
-                    <DialogTitle className="text-xl font-bold">
-                        {mode === "approve" ? "Complete Disbursement" : "Reject Request"}
-                    </DialogTitle>
-                </DialogHeader>
+            <DialogContent className="max-w-xl border-none rounded-3xl p-0 overflow-hidden bg-white shadow-2xl">
+                {/* Header */}
+                <div className={cn(
+                    "p-6 text-white space-y-2",
+                    mode === "approve" && "bg-gradient-to-r from-emerald-700 to-teal-800",
+                    mode === "hold" && "bg-gradient-to-r from-amber-700 to-orange-800",
+                    mode === "reject" && "bg-gradient-to-r from-rose-700 to-red-800"
+                )}>
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs uppercase tracking-wider font-semibold opacity-90">
+                            Admin Treasury Review
+                        </span>
+                        <span className="text-xs font-mono font-bold bg-white/20 px-2.5 py-0.5 rounded-full">
+                            {disbursement?.disbursement_code || `DSB-${disbursement?.id?.substring(0, 8)}`}
+                        </span>
+                    </div>
 
-                <div className="py-4 space-y-4">
-                    {mode === "approve" ? (
-                        <div className="space-y-4">
-                            <p className="text-sm text-[#667085]">
-                                Please upload the proof of payment to complete the disbursement for 
-                                <span className="font-semibold text-[#101828]"> {disbursement?.beneficiary_name}</span>.
-                            </p>
-                            
-                            <div 
-                                className={cn(
-                                    "border-2 border-dashed border-[#D0D5DD] rounded-xl p-6 flex flex-col items-center justify-center bg-[#F9FAFB] cursor-pointer hover:bg-[#F2F4F7] transition-colors relative",
-                                    proofFile && "border-solid border-primary bg-white"
-                                )}
-                                onClick={() => document.getElementById("proof-upload")?.click()}
-                            >
-                                <input 
-                                    type="file" 
-                                    id="proof-upload" 
-                                    className="hidden" 
-                                    accept="image/*,.pdf"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) setProofFile(file);
-                                    }}
-                                />
-                                {proofFile ? (
-                                    <div className="flex flex-col items-center gap-2">
-                                        <div className="h-12 w-12 rounded-lg bg-green-50 flex items-center justify-center">
-                                            <CloudUpload className="h-6 w-6 text-green-600" />
-                                        </div>
-                                        <p className="text-sm font-medium text-[#101828] truncate max-w-[200px]">
-                                            {proofFile.name}
-                                        </p>
-                                        <button 
-                                            className="text-xs text-red-500 hover:underline"
-                                            onClick={(e) => { e.stopPropagation(); setProofFile(null); }}
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <CloudUpload className="h-10 w-10 text-[#667085] mb-2" />
-                                        <p className="text-sm text-[#475467]">Click to upload proof of payment</p>
-                                        <p className="text-xs text-[#667085] mt-1">PNG, JPG or PDF</p>
-                                    </>
-                                )}
+                    <h2 className="text-xl font-bold">
+                        {mode === "approve" && "Approve & Execute Payout"}
+                        {mode === "hold" && "Place on Compliance Hold"}
+                        {mode === "reject" && "Reject Disbursement Request"}
+                    </h2>
+                </div>
+
+                <div className="p-6 space-y-4">
+                    {/* Summary Info */}
+                    {disbursement && (
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
+                            <div className="flex items-center justify-between">
+                                <span className="text-slate-500">Beneficiary:</span>
+                                <span className="font-bold text-slate-900">{disbursement.beneficiary_name}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-slate-500">Destination:</span>
+                                <span className="font-mono text-slate-800">
+                                    {disbursement.destination_mask || `${disbursement.bank_name} •••• ${disbursement.account_number?.slice(-4)}`}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-slate-500">Disbursement Amount:</span>
+                                <span className="font-bold text-slate-900 text-sm">
+                                    {disbursement.currency} {Number(disbursement.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between pt-2 border-t">
+                                <span className="text-slate-500">Risk Assessment:</span>
+                                <span className={cn(
+                                    "px-2 py-0.5 rounded-full font-bold uppercase text-[10px]",
+                                    riskLevel === "low" && "bg-emerald-100 text-emerald-800",
+                                    riskLevel === "medium" && "bg-amber-100 text-amber-800",
+                                    riskLevel === "high" && "bg-rose-100 text-rose-800",
+                                )}>
+                                    {riskLevel} Risk (Score: {disbursement.risk_score ?? 0}/100)
+                                </span>
                             </div>
                         </div>
-                    ) : (
-                        <div className="space-y-2">
-                            <Label htmlFor="reason">Reason for Rejection</Label>
-                            <Textarea 
-                                id="reason"
-                                placeholder="State the reason why this request is being rejected..."
-                                value={rejectReason}
-                                onChange={(e) => setRejectReason(e.target.value)}
-                                className="min-h-[120px] resize-none"
+                    )}
+
+                    {/* Action reason if Hold or Reject */}
+                    {(mode === "hold" || mode === "reject") && (
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-700">
+                                {mode === "hold" ? "Hold Justification & Additional Requirements" : "Rejection Reason"}
+                            </label>
+                            <Textarea
+                                placeholder={mode === "hold" 
+                                    ? "Explain why this payout is placed on hold (e.g. pending identity re-verification, invoice clarification)..."
+                                    : "Explain why this disbursement is rejected..."
+                                }
+                                value={actionReason}
+                                onChange={(e) => setActionReason(e.target.value)}
+                                className="min-h-[100px] rounded-xl border-[#EAECF0] resize-none text-xs"
                             />
                         </div>
                     )}
+
+                    {mode === "approve" && (
+                        <p className="text-xs text-slate-500 leading-relaxed">
+                            By approving this request, the automated payout engine will initiate a direct transfer to the recipient's bank account or wallet, deduct platform ledger funds, and notify the campaign creator.
+                        </p>
+                    )}
                 </div>
 
-                <DialogFooter className="gap-2 sm:gap-0">
+                <DialogFooter className="p-5 bg-slate-50 rounded-b-3xl border-t border-slate-100 flex items-center justify-end gap-2">
                     <Button 
                         variant="outline" 
                         onClick={() => onOpenChange(false)}
-                        className="rounded-lg h-11 border-[#EAECF0]"
+                        className="rounded-xl h-11 border-[#EAECF0] font-semibold"
                     >
                         Cancel
                     </Button>
@@ -176,11 +213,16 @@ export function ProcessDisbursementModal({
                         onClick={handleAction}
                         disabled={isSubmitting}
                         className={cn(
-                            "rounded-lg h-11 min-w-[120px]",
-                            mode === "approve" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
+                            "rounded-xl h-11 px-6 font-semibold shadow-sm",
+                            mode === "approve" && "bg-emerald-600 hover:bg-emerald-700 text-white",
+                            mode === "hold" && "bg-amber-600 hover:bg-amber-700 text-white",
+                            mode === "reject" && "bg-rose-600 hover:bg-rose-700 text-white"
                         )}
                     >
-                        {isSubmitting ? "Processing..." : (mode === "approve" ? "Confirm Disbursement" : "Reject Request")}
+                        {isSubmitting ? "Processing..." : (
+                            mode === "approve" ? "Confirm & Execute Payout" :
+                            mode === "hold" ? "Place on Hold" : "Confirm Rejection"
+                        )}
                     </Button>
                 </DialogFooter>
             </DialogContent>

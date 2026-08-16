@@ -306,9 +306,12 @@ function MembersTab({ roles }: { roles: Role[] }) {
             accessorFn: (row) =>
                 `${row.profile?.first_name || ""} ${row.profile?.last_name || ""}`.trim(),
             cell: ({ row }) => (
-                <span className="font-medium text-[#101828]">
-                    {row.getValue("name")}
-                </span>
+                <Link
+                    href={`/dashboard/users/${row.original.id}`}
+                    className="font-medium text-[#101828] hover:text-[#0E3B5D] hover:underline"
+                >
+                    {row.getValue("name") || "—"}
+                </Link>
             ),
         },
         {
@@ -816,9 +819,12 @@ function TeamMembersTab({ roles }: { roles: Role[] }) {
             accessorFn: (row) =>
                 `${row.profile?.first_name || ""} ${row.profile?.last_name || ""}`.trim(),
             cell: ({ row }) => (
-                <span className="font-medium text-[#101828]">
-                    {row.getValue("name")}
-                </span>
+                <Link
+                    href={`/dashboard/users/${row.original.id}`}
+                    className="font-medium text-[#101828] hover:text-[#0E3B5D] hover:underline"
+                >
+                    {row.getValue("name") || "—"}
+                </Link>
             ),
         },
         {

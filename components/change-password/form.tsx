@@ -4,25 +4,38 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Eye, EyeOff, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Lock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "@/services";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import Cookies from "js-cookie";
+import { decryptData } from "@/lib/crypto";
 
-const changePasswordSchema = z.object({
-    password: z
-        .string()
-        .min(6, { message: "Password must be at least 6 characters" }),
-    password_confirmation: z
-        .string()
-        .min(6, { message: "Password must be equal to the password" }),
-});
+const changePasswordSchema = z
+    .object({
+        password: z
+            .string()
+            .min(6, { message: "Password must be at least 6 characters" }),
+        password_confirmation: z
+            .string()
+            .min(6, { message: "Password confirmation must be at least 6 characters" }),
+    })
+    .refine((data) => data.password === data.password_confirmation, {
+        message: "Passwords do not match",
+        path: ["password_confirmation"],
+    });
 
 type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 
 export function ChangePasswordForm() {
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const router = useRouter();
+    const searchParams = useSearchParams();
 
     const {
         register,
@@ -32,8 +45,32 @@ export function ChangePasswordForm() {
         resolver: zodResolver(changePasswordSchema),
     });
 
+    const changePasswordMutation = useMutation({
+        mutationFn: (data: ChangePasswordFormValues) => {
+            const token =
+                searchParams.get("token") ||
+                (() => {
+                    const encrypted = Cookies.get("fajiri_token");
+                    return encrypted ? decryptData(encrypted) : "";
+                })();
+
+            return authService.changePassword({
+                token: token || "",
+                password: data.password,
+                password_confirmation: data.password_confirmation,
+            });
+        },
+        onSuccess: () => {
+            toast.success("Password changed successfully! Please log in.");
+            router.push("/login");
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Failed to change password");
+        },
+    });
+
     const onSubmit = (data: ChangePasswordFormValues) => {
-        console.log("Form submitted:", data);
+        changePasswordMutation.mutate(data);
     };
 
     return (
@@ -61,6 +98,7 @@ export function ChangePasswordForm() {
                             type={showPassword ? "text" : "password"}
                             {...register("password")}
                             className={errors.password ? "border-red-500" : ""}
+                            disabled={changePasswordMutation.isPending}
                         />
                         <button
                             type="button"
@@ -82,34 +120,35 @@ export function ChangePasswordForm() {
                 </div>
 
                 <div className="space-y-2 text-left relative">
-                    <Label htmlFor="password">Confirm password</Label>
+                    <Label htmlFor="password_confirmation">Confirm password</Label>
                     <div className="relative">
                         <Input
                             id="password_confirmation"
-                            placeholder="Enter password"
-                            type={showPassword ? "text" : "password"}
+                            placeholder="Confirm password"
+                            type={showConfirmPassword ? "text" : "password"}
                             {...register("password_confirmation")}
                             className={
                                 errors.password_confirmation
                                     ? "border-red-500"
                                     : ""
                             }
+                            disabled={changePasswordMutation.isPending}
                         />
                         <button
                             type="button"
-                            onClick={() => setShowPassword(!showPassword)}
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
                         >
-                            {showPassword ? (
+                            {showConfirmPassword ? (
                                 <EyeOff className="h-4 w-4" />
                             ) : (
                                 <Eye className="h-4 w-4" />
                             )}
                         </button>
                     </div>
-                    {errors.password && (
+                    {errors.password_confirmation && (
                         <p className="text-xs text-red-500">
-                            {errors.password.message}
+                            {errors.password_confirmation.message}
                         </p>
                     )}
                 </div>
@@ -117,8 +156,13 @@ export function ChangePasswordForm() {
                 <Button
                     type="submit"
                     className="w-full bg-primary hover:bg-primary/90 text-white py-6"
+                    disabled={changePasswordMutation.isPending}
                 >
-                    Change password
+                    {changePasswordMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        "Change password"
+                    )}
                 </Button>
             </form>
         </div>

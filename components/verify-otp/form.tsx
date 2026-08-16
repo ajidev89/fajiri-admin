@@ -11,6 +11,8 @@ import { useAuthStore } from "@/store/auth-store";
 import Cookies from "js-cookie";
 import { encryptData } from "@/lib/crypto";
 
+import { toast } from "sonner";
+
 export function OTPVerificationForm() {
     const [otp, setOtp] = useState<string[]>(new Array(6).fill(""));
     const [timer, setTimer] = useState(59);
@@ -79,10 +81,10 @@ export function OTPVerificationForm() {
         onSuccess: () => {
             setTimer(59);
             setCanResend(false);
-            console.log("OTP Resent successfully");
+            toast.success("Verification code resent successfully");
         },
-        onError: (error) => {
-            console.error("Resend OTP error:", error);
+        onError: (error: any) => {
+            toast.error(error.message || "Failed to resend verification code");
         },
     });
 
@@ -100,11 +102,12 @@ export function OTPVerificationForm() {
                 Cookies.set("fajiri_token", encryptedToken, {
                     expires: 1,
                 });
+                toast.success("Verification successful");
                 router.push("/dashboard");
             }
         },
-        onError: (error) => {
-            console.error("Verification error:", error);
+        onError: (error: any) => {
+            toast.error(error.message || "Invalid or expired verification code");
         },
     });
 
@@ -150,7 +153,7 @@ export function OTPVerificationForm() {
 
             <div className="space-y-6">
                 <div
-                    className="flex justify-between gap-2 sm:gap-4"
+                    className="flex justify-center gap-1.5 sm:gap-3 md:gap-4"
                     onPaste={handlePaste}
                 >
                     {otp.map((data, index) => (
@@ -165,10 +168,10 @@ export function OTPVerificationForm() {
                             onChange={(e) => handleChange(e.target, index)}
                             onKeyDown={(e) => handleKeyDown(e, index)}
                             className={cn(
-                                "w-12 h-12 sm:w-14 sm:h-14 text-center text-lg font-semibold border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0E3B5D] transition-all",
+                                "w-10 h-12 sm:w-12 sm:h-14 md:w-14 md:h-14 text-center text-lg sm:text-xl font-bold border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0E3B5D] transition-all",
                                 data
-                                    ? "border-[#0E3B5D] bg-[#F0F5F9]"
-                                    : "border-[#D0D5DD] bg-white",
+                                    ? "border-[#0E3B5D] bg-[#F0F5F9] text-[#0E3B5D]"
+                                    : "border-[#D0D5DD] bg-white text-[#101828]",
                             )}
                             disabled={verifyMutation.isPending}
                         />

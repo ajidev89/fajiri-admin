@@ -7,16 +7,20 @@ export interface Donation {
     name: string;
     email: string;
     user_id: string;
+    medium?: string;
     donatable_type: string;
+    donatable?: any;
     amount: number;
-    converted_amount: string;
     currency: string;
+    base_amount?: number;
+    base_currency?: string;
+    base_amount_usd?: number;
+    converted_amount?: string;
     status: string;
     reference: string;
-    medium?: string;
     created_at: string;
     updated_at: string;
-    deleted_at: string;
+    deleted_at?: string | null;
 }
 
 export interface DonationWithCampaign extends Donation {

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { PollOptionsEditor } from "./poll-options-editor";
 import type { Poll, PollType } from "@/services/polls";
+import { toast } from "sonner";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -78,7 +79,11 @@ export function PollForm({
     const [submitStatus, setSubmitStatus] = React.useState<"draft" | "active">("draft");
 
     const handleFormSubmit = async (data: PollFormValues) => {
-        await onSubmit(data, submitStatus);
+        try {
+            await onSubmit(data, submitStatus);
+        } catch (error: any) {
+            toast.error(error?.message || "Failed to submit poll");
+        }
     };
 
     return (

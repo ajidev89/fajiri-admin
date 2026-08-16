@@ -1,21 +1,52 @@
 import { apiClient, ApiResponse, PaginatedResponse } from "./api-client";
+import { User } from "./auth";
+
+export type CampaignCategoryType =
+    | "disaster-relief"
+    | "education"
+    | "medical-aid"
+    | "health"
+    | "food"
+    | "water"
+    | "shelter"
+    | "clothing"
+    | "other"
+    | string;
+
+export type CampaignTypeEnum = "personal" | "organization" | string;
+
+export const CAMPAIGN_CATEGORY_TYPES = [
+    { value: "disaster-relief", label: "Disaster Relief" },
+    { value: "education", label: "Education" },
+    { value: "medical-aid", label: "Medical Aid" },
+    { value: "health", label: "Health" },
+    { value: "food", label: "Food" },
+    { value: "water", label: "Water" },
+    { value: "shelter", label: "Shelter" },
+    { value: "clothing", label: "Clothing" },
+    { value: "other", label: "Other" },
+];
 
 export interface Campaign {
     id: string;
     title: string;
     body: string;
-    type: string;
-    campaign_type: string;
+    type: CampaignCategoryType;
+    campaign_type: CampaignTypeEnum;
     images: string[] | null;
     status: string;
     end_date: string | null;
     goal_amount: number;
-    goal_amount_converted: number;
+    goal_amount_converted?: number;
     collected_amount: number;
-    collected_amount_converted: number;
+    collected_amount_converted?: number;
     currency: string;
-    target_currency: string;
+    target_currency?: string;
+    base_goal_amount?: number;
+    base_collected_amount?: number;
+    base_currency?: string;
     donors_count: number;
+    user?: User | null;
     created_at: string;
     updated_at: string;
 }
@@ -130,6 +161,10 @@ export const campaignService = {
             formData,
         );
     },
+    deleteCampaign(campaignId: string) {
+        return apiClient.delete<ApiResponse<unknown>>(`/campaigns/${campaignId}`);
+    },
+
     getUserDonatedCampaigns(params: { user_id: string }) {
         return apiClient.get<PaginatedResponse<Campaign>>(
             "/campaigns/user-donated",

@@ -46,6 +46,9 @@ export function MediaLibrary() {
             queryClient.invalidateQueries({ queryKey: ["media"] });
             toast.success("Media deleted successfully");
         },
+        onError: (error: any) => {
+            toast.error(error?.message || "Failed to delete media");
+        },
     });
 
     const mediaList = mediaRes?.data || [];

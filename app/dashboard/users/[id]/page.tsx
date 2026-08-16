@@ -21,6 +21,10 @@ import {
     ShieldCheck,
     History,
     Copy,
+    Wallet,
+    HeartHandshake,
+    ArrowDownLeft,
+    ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -76,16 +80,36 @@ export default function UserDetailsPage() {
         queryFn: () => usersService.getUserTransactions(id),
     });
 
+    const { data: userDonationsRes, isLoading: isUserDonationsLoading } = useQuery({
+        queryKey: ["user-donations", id],
+        queryFn: () => usersService.getUserDonations(id),
+    });
+
     const { data: referralsRes, isLoading: isReferralsLoading } = useQuery({
         queryKey: ["user-referrals", id],
         queryFn: () => usersService.getUserReferrals(id),
     });
 
+    const [financialSubTab, setFinancialSubTab] = React.useState<"wallet" | "donations">("wallet");
+
     const user = userRes?.data;
     const donatedCampaigns = campaignsRes?.data || [];
     const audits = auditsRes?.data || [];
     const transactions = transactionsRes?.data || [];
+    const userDonations = userDonationsRes?.data || [];
     const referrals = referralsRes?.data || [];
+
+    const walletBalance = user?.wallet?.balance ?? 0;
+    const walletCurrency = user?.wallet?.currency || "NGN";
+
+    const totalDonationsAmount = React.useMemo(() => {
+        if (user?.total_donations !== undefined && user?.total_donations !== null && user.total_donations > 0) {
+            return user.total_donations;
+        }
+        return userDonations
+            .filter((d) => d.status === "completed" || d.status === "success")
+            .reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+    }, [user, userDonations]);
 
     const isSuspended = user?.status === "suspended";
 
@@ -282,7 +306,7 @@ export default function UserDetailsPage() {
                                 />
                                 {user?.referral_code && (
                                     <CopyableInfoItem 
-                                        label="Referral Link" 
+                                        label="Human Outreach Link" 
                                         value={`https://app.fajiri.org/register?ref=${user.referral_code}`} 
                                     />
                                 )}
@@ -433,55 +457,338 @@ export default function UserDetailsPage() {
 
                             <TabsContent
                                 value="financial"
-                                className="p-8 focus-visible:ring-0"
+                                className="p-6 sm:p-8 focus-visible:ring-0 space-y-6"
                             >
-                                {isTransactionsLoading ? (
-                                    <div className="flex items-center justify-center h-40">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                                    </div>
-                                ) : transactions.length > 0 ? (
-                                    <div className="space-y-6">
-                                        {transactions.map((tx) => (
-                                            <div
-                                                key={tx.id}
-                                                className="flex items-center justify-between p-4 border border-[#EAECF0] rounded-2xl bg-gray-50/50"
-                                            >
-                                                <div className="flex items-center gap-4">
-                                                    <div className={cn(
-                                                        "h-10 w-10 rounded-full flex items-center justify-center",
-                                                        (tx.type === "credit" || tx.type === "deposit") ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
-                                                    )}>
-                                                        <History className="h-5 w-5" />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <p className="text-sm font-bold text-[#101828]">
-                                                            {tx.description || "Wallet Transaction"}
-                                                        </p>
-                                                        <p className="text-xs text-[#667085]">
-                                                            {dayjs(tx.created_at).format("DD MMM YYYY • hh:mm A")}
-                                                        </p>
-                                                    </div>
+                                {/* Financial Summary KPI Cards */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Wallet Balance Card */}
+                                    <div className="p-5 rounded-2xl border border-[#EAECF0] bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] relative overflow-hidden flex flex-col justify-between">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                                                    <Wallet className="h-5 w-5" />
                                                 </div>
-                                                <div className="text-right space-y-1">
-                                                    <p className={cn(
-                                                        "text-sm font-bold",
-                                                        (tx.type === "credit" || tx.type === "deposit") ? "text-green-600" : "text-red-600"
-                                                    )}>
-                                                        {(tx.type === "credit" || tx.type === "deposit") ? "+" : "-"}{tx.currency}{Number(tx.amount).toLocaleString()}
+                                                <div>
+                                                    <p className="text-xs font-semibold text-[#667085] uppercase tracking-wider">
+                                                        Wallet Balance
                                                     </p>
-                                                    <Badge variant="outline" className={cn(
-                                                        "capitalize text-[10px]",
-                                                        tx.status === "completed" || tx.status === "success" ? "text-green-600 border-green-200 bg-green-50" : "text-amber-600 border-amber-200 bg-amber-50"
-                                                    )}>
-                                                        {tx.status}
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "capitalize text-[10px] mt-0.5",
+                                                            user?.wallet?.status === "active"
+                                                                ? "text-green-700 bg-green-50 border-green-200"
+                                                                : "text-amber-700 bg-amber-50 border-amber-200"
+                                                        )}
+                                                    >
+                                                        {user?.wallet?.status || "Active"}
                                                     </Badge>
                                                 </div>
                                             </div>
-                                        ))}
+                                        </div>
+                                        <div>
+                                            <p className="text-2xl font-black text-[#101828]">
+                                                {walletCurrency}{" "}
+                                                {Number(walletBalance).toLocaleString(undefined, {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2,
+                                                })}
+                                            </p>
+                                            <p className="text-xs text-[#667085] mt-1">
+                                                {user?.wallet?.withdrawal_total
+                                                    ? `Total Withdrawals: ${walletCurrency} ${Number(user.wallet.withdrawal_total).toLocaleString()}`
+                                                    : "Available balance for transactions"}
+                                            </p>
+                                        </div>
                                     </div>
-                                ) : (
-                                    <div className="flex items-center justify-center h-64 text-[#667085]">
-                                        No financial activity recorded.
+
+                                    {/* Total Donations Card */}
+                                    <div className="p-5 rounded-2xl border border-[#EAECF0] bg-gradient-to-br from-[#F0FDF4] to-[#DCFCE7]/40 relative overflow-hidden flex flex-col justify-between">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center text-green-700">
+                                                    <HeartHandshake className="h-5 w-5" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-green-800 uppercase tracking-wider">
+                                                        Total Donations
+                                                    </p>
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="capitalize text-[10px] mt-0.5 text-green-700 bg-white border-green-200"
+                                                    >
+                                                        {userDonations.length} {userDonations.length === 1 ? "Donation" : "Donations"}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-2xl font-black text-[#101828]">
+                                                {walletCurrency}{" "}
+                                                {Number(totalDonationsAmount).toLocaleString(undefined, {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2,
+                                                })}
+                                            </p>
+                                            <p className="text-xs text-green-700 mt-1 font-medium">
+                                                {userDonations.length > 0
+                                                    ? `Lifetime contributions across campaigns & needs`
+                                                    : "No donations made yet"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Sub-tab Navigation */}
+                                <div className="flex items-center gap-2 border-b border-[#EAECF0] pb-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFinancialSubTab("wallet")}
+                                        className={cn(
+                                            "px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2",
+                                            financialSubTab === "wallet"
+                                                ? "bg-[#0E3B5D] text-white shadow-sm"
+                                                : "text-[#667085] hover:bg-gray-100 hover:text-[#101828]"
+                                        )}
+                                    >
+                                        <History className="h-4 w-4" />
+                                        Wallet Transactions
+                                        <span
+                                            className={cn(
+                                                "text-xs px-2 py-0.5 rounded-full font-bold",
+                                                financialSubTab === "wallet"
+                                                    ? "bg-white/20 text-white"
+                                                    : "bg-[#EAECF0] text-[#475467]"
+                                            )}
+                                        >
+                                            {transactions.length}
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setFinancialSubTab("donations")}
+                                        className={cn(
+                                            "px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2",
+                                            financialSubTab === "donations"
+                                                ? "bg-[#0E3B5D] text-white shadow-sm"
+                                                : "text-[#667085] hover:bg-gray-100 hover:text-[#101828]"
+                                        )}
+                                    >
+                                        <HeartHandshake className="h-4 w-4" />
+                                        Donations
+                                        <span
+                                            className={cn(
+                                                "text-xs px-2 py-0.5 rounded-full font-bold",
+                                                financialSubTab === "donations"
+                                                    ? "bg-white/20 text-white"
+                                                    : "bg-[#EAECF0] text-[#475467]"
+                                            )}
+                                        >
+                                            {userDonations.length}
+                                        </span>
+                                    </button>
+                                </div>
+
+                                {/* Sub-tab Content: Wallet Transactions */}
+                                {financialSubTab === "wallet" && (
+                                    <div>
+                                        {isTransactionsLoading ? (
+                                            <div className="flex items-center justify-center h-40">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                            </div>
+                                        ) : transactions.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {transactions.map((tx) => {
+                                                    const isPositive =
+                                                        tx.type === "credit" ||
+                                                        tx.type === "deposit";
+                                                    return (
+                                                        <div
+                                                            key={tx.id}
+                                                            className="flex items-center justify-between p-4 border border-[#EAECF0] rounded-2xl bg-white hover:bg-gray-50/70 transition-colors"
+                                                        >
+                                                            <div className="flex items-center gap-4 min-w-0">
+                                                                <div
+                                                                    className={cn(
+                                                                        "h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0",
+                                                                        isPositive
+                                                                            ? "bg-green-50 text-green-600"
+                                                                            : "bg-red-50 text-red-600"
+                                                                    )}
+                                                                >
+                                                                    {isPositive ? (
+                                                                        <ArrowDownLeft className="h-5 w-5" />
+                                                                    ) : (
+                                                                        <ArrowUpRight className="h-5 w-5" />
+                                                                    )}
+                                                                </div>
+                                                                <div className="space-y-1 min-w-0">
+                                                                    <p className="text-sm font-bold text-[#101828] truncate">
+                                                                        {tx.description || "Wallet Transaction"}
+                                                                    </p>
+                                                                    <div className="flex flex-wrap items-center gap-2 text-xs text-[#667085]">
+                                                                        <span>
+                                                                            {dayjs(tx.created_at).format(
+                                                                                "DD MMM YYYY • hh:mm A"
+                                                                            )}
+                                                                        </span>
+                                                                        {tx.reference && (
+                                                                            <>
+                                                                                <span>•</span>
+                                                                                <span className="font-mono truncate max-w-[150px]">
+                                                                                    Ref: {tx.reference}
+                                                                                </span>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right space-y-1 flex-shrink-0 ml-4">
+                                                                <p
+                                                                    className={cn(
+                                                                        "text-sm font-bold",
+                                                                        isPositive
+                                                                            ? "text-green-600"
+                                                                            : "text-red-600"
+                                                                    )}
+                                                                >
+                                                                    {isPositive ? "+" : "-"}
+                                                                    {tx.currency || walletCurrency}{" "}
+                                                                    {Number(tx.amount).toLocaleString(undefined, {
+                                                                        minimumFractionDigits: 2,
+                                                                        maximumFractionDigits: 2,
+                                                                    })}
+                                                                </p>
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className={cn(
+                                                                        "capitalize text-[10px]",
+                                                                        tx.status === "completed" ||
+                                                                            tx.status === "success"
+                                                                            ? "text-green-600 border-green-200 bg-green-50"
+                                                                            : tx.status === "pending"
+                                                                              ? "text-amber-600 border-amber-200 bg-amber-50"
+                                                                              : "text-red-600 border-red-200 bg-red-50"
+                                                                    )}
+                                                                >
+                                                                    {tx.status}
+                                                                </Badge>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-48 text-center">
+                                                <History className="h-10 w-10 text-[#98A2B3] mb-3 opacity-50" />
+                                                <h5 className="text-[#101828] font-medium mb-1">
+                                                    No Wallet Transactions
+                                                </h5>
+                                                <p className="text-xs text-[#667085]">
+                                                    No financial activity or transfers recorded for this wallet.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Sub-tab Content: Donations */}
+                                {financialSubTab === "donations" && (
+                                    <div>
+                                        {isUserDonationsLoading ? (
+                                            <div className="flex items-center justify-center h-40">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                            </div>
+                                        ) : userDonations.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {userDonations.map((donation) => {
+                                                    const targetTitle =
+                                                        donation.donatable?.title ||
+                                                        donation.donatable?.name ||
+                                                        "Campaign / Need";
+
+                                                    return (
+                                                        <div
+                                                            key={donation.id}
+                                                            className="flex items-center justify-between p-4 border border-[#EAECF0] rounded-2xl bg-white hover:bg-gray-50/70 transition-colors"
+                                                        >
+                                                            <div className="flex items-center gap-4 min-w-0">
+                                                                <div className="h-10 w-10 rounded-xl bg-blue-50 text-[#0E3B5D] flex items-center justify-center flex-shrink-0">
+                                                                    <HeartHandshake className="h-5 w-5" />
+                                                                </div>
+                                                                <div className="space-y-1 min-w-0">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <p className="text-sm font-bold text-[#101828] truncate">
+                                                                            {targetTitle}
+                                                                        </p>
+                                                                        {donation.medium && (
+                                                                            <Badge
+                                                                                variant="outline"
+                                                                                className="capitalize text-[10px] hidden sm:inline-flex"
+                                                                            >
+                                                                                {donation.medium}
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex flex-wrap items-center gap-2 text-xs text-[#667085]">
+                                                                        <span>
+                                                                            {dayjs(donation.created_at).format(
+                                                                                "DD MMM YYYY • hh:mm A"
+                                                                            )}
+                                                                        </span>
+                                                                        {donation.reference && (
+                                                                            <>
+                                                                                <span>•</span>
+                                                                                <span className="font-mono truncate max-w-[150px]">
+                                                                                    Ref: {donation.reference}
+                                                                                </span>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right space-y-1 flex-shrink-0 ml-4">
+                                                                <p className="text-sm font-bold text-[#0E3B5D]">
+                                                                    {donation.currency || walletCurrency}{" "}
+                                                                    {Number(donation.amount).toLocaleString(
+                                                                        undefined,
+                                                                        {
+                                                                            minimumFractionDigits: 2,
+                                                                            maximumFractionDigits: 2,
+                                                                        }
+                                                                    )}
+                                                                </p>
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className={cn(
+                                                                        "capitalize text-[10px]",
+                                                                        donation.status === "completed" ||
+                                                                            donation.status === "success"
+                                                                            ? "text-green-600 border-green-200 bg-green-50"
+                                                                            : donation.status === "pending"
+                                                                              ? "text-amber-600 border-amber-200 bg-amber-50"
+                                                                              : "text-red-600 border-red-200 bg-red-50"
+                                                                    )}
+                                                                >
+                                                                    {donation.status}
+                                                                </Badge>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-48 text-center">
+                                                <HeartHandshake className="h-10 w-10 text-[#98A2B3] mb-3 opacity-50" />
+                                                <h5 className="text-[#101828] font-medium mb-1">
+                                                    No Donations Made
+                                                </h5>
+                                                <p className="text-xs text-[#667085]">
+                                                    This user hasn't made any campaign or need donations yet.
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </TabsContent>

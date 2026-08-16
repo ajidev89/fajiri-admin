@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { useQuery } from "@tanstack/react-query";
@@ -53,24 +54,35 @@ export function LeaderboardView() {
             header: "Member",
             cell: ({ row }) => {
                 const member = row.original;
+                const fullName =
+                    [member.profile?.first_name, member.profile?.last_name]
+                        .filter(Boolean)
+                        .join(" ") ||
+                    member.name ||
+                    "Unknown Member";
+
                 return (
-                    <div className="flex items-center gap-3">
+                    <Link
+                        href={`/dashboard/users/${member.id}`}
+                        className="flex items-center gap-3 group hover:opacity-80 transition-opacity"
+                    >
                         <Avatar className="h-10 w-10">
                             <AvatarImage
                                 src={member.profile?.avatar || ""}
                                 className="object-cover"
                             />
                             <AvatarFallback>
-                                {member.profile?.first_name?.charAt(0) || "U"}
+                                {member.profile?.first_name?.charAt(0) ||
+                                    member.name?.charAt(0) ||
+                                    "U"}
                             </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col">
-                            <span className="font-medium text-[#101828]">
-                                {member.profile?.first_name}{" "}
-                                {member.profile?.last_name}
+                            <span className="font-medium text-[#101828] group-hover:text-[#0E3B5D] group-hover:underline">
+                                {fullName}
                             </span>
                         </div>
-                    </div>
+                    </Link>
                 );
             },
         },
@@ -111,6 +123,18 @@ export function LeaderboardView() {
                 <div className="flex items-center gap-1">
                     <span className="text-[#667085]">
                         {row.getValue("event_attendance_count")}
+                    </span>
+                    <span className="text-xs text-[#667085]">pt</span>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "referrals_count",
+            header: "Referrals",
+            cell: ({ row }) => (
+                <div className="flex items-center gap-1">
+                    <span className="text-[#667085]">
+                        {row.getValue("referrals_count") ?? 0}
                     </span>
                     <span className="text-xs text-[#667085]">pt</span>
                 </div>

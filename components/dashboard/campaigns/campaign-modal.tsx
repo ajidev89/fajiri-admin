@@ -26,8 +26,7 @@ import { CurrencySelect } from "@/components/form/currency-select";
 import { CloudUpload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { campaignService, Campaign } from "@/services/campaigns";
-import { categoryService } from "@/services/categories";
+import { campaignService, Campaign, CAMPAIGN_CATEGORY_TYPES } from "@/services/campaigns";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 
@@ -61,18 +60,32 @@ export function CampaignModal({
 
     const queryClient = useQueryClient();
 
-    const { data: categoriesRes } = useQuery({
-        queryKey: ["categories"],
-        queryFn: () => categoryService.getCategories(),
+    const { data: typesRes } = useQuery({
+        queryKey: ["campaign-types"],
+        queryFn: () => campaignService.getTypes(),
     });
 
     const category = React.useMemo(() => {
-        if (!categoriesRes?.data) return [];
-        return categoriesRes.data.map((cat) => ({
-            value: cat.slug,
-            label: cat.name,
-        }));
-    }, [categoriesRes]);
+        if (typesRes?.data) {
+            if (typeof typesRes.data === "object" && !Array.isArray(typesRes.data)) {
+                return Object.entries(typesRes.data).map(([key, val]) => ({
+                    value: String(val),
+                    label: String(val)
+                        .replace(/-/g, " ")
+                        .replace(/\b\w/g, (l) => l.toUpperCase()),
+                }));
+            }
+            if (Array.isArray(typesRes.data)) {
+                return (typesRes.data as any[]).map((item) => ({
+                    value: typeof item === "string" ? item : item.value || item.slug,
+                    label: typeof item === "string"
+                        ? item.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+                        : item.label || item.name,
+                }));
+            }
+        }
+        return CAMPAIGN_CATEGORY_TYPES;
+    }, [typesRes]);
 
     const methods = useForm<CampaignFormValues>({
         resolver: zodResolver(campaignSchema),

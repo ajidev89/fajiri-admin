@@ -52,13 +52,24 @@ async function handleResponse<T>(response: Response): Promise<T> {
         }
         const error = await response.json().catch(() => ({}));
         
-        let errorMessage = error.message;
-        if (error.errors && typeof error.errors === 'object') {
-            const firstKey = Object.keys(error.errors)[0];
-            if (firstKey && Array.isArray(error.errors[firstKey])) {
-                errorMessage = error.errors[firstKey][0];
-            } else if (firstKey && typeof error.errors[firstKey] === 'string') {
-                errorMessage = error.errors[firstKey];
+        let errorMessage = error.message || error.error || error.detail;
+        if (error.errors) {
+            if (Array.isArray(error.errors) && error.errors.length > 0) {
+                errorMessage = typeof error.errors[0] === 'string'
+                    ? error.errors[0]
+                    : (error.errors[0]?.message || errorMessage);
+            } else if (typeof error.errors === 'object') {
+                const entries = Object.entries(error.errors);
+                if (entries.length > 0) {
+                    const [, val] = entries[0];
+                    if (Array.isArray(val) && val.length > 0) {
+                        errorMessage = val[0];
+                    } else if (typeof val === 'string') {
+                        errorMessage = val;
+                    }
+                }
+            } else if (typeof error.errors === 'string') {
+                errorMessage = error.errors;
             }
         }
 

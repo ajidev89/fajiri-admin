@@ -33,7 +33,7 @@ export default function PlansPage() {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => planService.deletePlan(id),
+        mutationFn: (id: string | number) => planService.deletePlan(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["plans"] });
             toast.success("Plan deleted successfully");
@@ -60,7 +60,7 @@ export default function PlansPage() {
         setIsModalOpen(true);
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = (id: string | number) => {
         if (confirm("Are you sure you want to delete this plan?")) {
             deleteMutation.mutate(id);
         }

@@ -69,7 +69,7 @@ export function PlanPreviewModal({ isOpen, onOpenChange, plan }: PlanPreviewModa
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-[#667085]">Account Type</p>
                             <Badge variant="outline" className="font-normal bg-[#F0F5F9] text-primary">
-                                {plan.account_type.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                                {plan.account_type?.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase()) || "General"}
                             </Badge>
                         </div>
                         {plan.sub_account_type && (

@@ -1,4 +1,5 @@
 import { apiClient, ApiResponse } from "./api-client";
+import { User } from "./auth";
 
 export interface Need {
   id: string;
@@ -8,9 +9,12 @@ export interface Need {
   location: string;
   amount: number | null;
   currency: string | null;
+  base_amount?: number | null;
+  base_currency?: string | null;
   image: string | null;
   age: number;
   status: string;
+  added_by?: User | null;
   created_at: string;
   updated_at: string;
 }

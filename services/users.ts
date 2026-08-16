@@ -4,12 +4,51 @@ import { User } from "./auth";
 export interface Wallet {
     id: string;
     balance: number;
+    withdrawal_total?: number;
     currency: string;
     status: string;
 }
 
+export interface Transaction {
+    id: string;
+    amount: number;
+    type: "credit" | "debit" | "deposit" | "withdrawal" | "transfer" | string;
+    currency: string;
+    description: string | null;
+    reference: string | null;
+    status: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface UserDonation {
+    id: string;
+    name: string;
+    email: string;
+    user_id: string;
+    medium?: string;
+    donatable_type: string;
+    donatable?: {
+        id: string;
+        title?: string;
+        name?: string;
+        body?: string;
+        [key: string]: any;
+    };
+    amount: number;
+    currency: string;
+    base_amount?: number;
+    base_currency?: string;
+    status: string;
+    reference: string;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface UserWithWallet extends User {
     wallet: Wallet | null;
+    total_donations?: number;
+    donations_count?: number;
 }
 
 export interface ChangeUserPasswordPayload {
@@ -55,8 +94,13 @@ export const usersService = {
         return apiClient.get<ApiResponse<any[]>>(`/users/${userId}/audits`);
     },
     getUserTransactions(userId: string) {
-        return apiClient.get<ApiResponse<any[]>>(
+        return apiClient.get<ApiResponse<Transaction[]>>(
             `/users/${userId}/transactions`,
+        );
+    },
+    getUserDonations(userId: string) {
+        return apiClient.get<ApiResponse<UserDonation[]>>(
+            `/users/${userId}/donations`,
         );
     },
     getUserReferrals(userId: string) {

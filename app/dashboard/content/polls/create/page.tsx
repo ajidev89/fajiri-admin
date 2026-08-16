@@ -19,7 +19,7 @@ export default function CreatePollPage() {
             toast.success("Poll published successfully");
             router.push("/dashboard/content/polls");
         },
-        onError: () => toast.error("Failed to create poll"),
+        onError: (error: any) => toast.error(error?.message || "Failed to create poll"),
     });
 
     const handleSubmit = async (data: PollFormValues, status: "draft" | "active") => {
@@ -35,7 +35,7 @@ export default function CreatePollPage() {
             options: data.options?.map((o, i) => ({ label: o.label, order: i })),
         };
 
-        await createMutation.mutateAsync(payload);
+        createMutation.mutate(payload);
     };
 
     return (

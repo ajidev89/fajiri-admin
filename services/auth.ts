@@ -60,12 +60,14 @@ export interface User {
     id: string;
     member_id: string;
     email: string;
-    email_verified_at: string;
+    email_verified_at: string | null;
     phone: string | null;
     username: string | null;
     has_pin: boolean;
     role: Role;
     profile: Profile;
+    country?: any | null;
+    wallet?: any | null;
     phone_verified_at: string | null;
     account_type: string;
     notification_token?: string | null;
@@ -73,6 +75,9 @@ export interface User {
     status: string;
     referral_code: string | null;
     referrals_count: number;
+    total_donations?: number;
+    donations_count?: number;
+    is_subscribed?: boolean;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
@@ -81,8 +86,10 @@ export interface User {
     campaigns_count?: number;
     needs_count?: number;
     plan?: {
+        id?: string | number;
+        plan_id?: string | number;
         name: string;
-        price: string;
+        price: string | number;
         currency: string;
         started_at: string;
         expires_at: string;
