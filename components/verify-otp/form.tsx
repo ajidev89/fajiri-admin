@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useMutation } from "@tanstack/react-query";
 import { authService, otpService } from "@/services";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import Cookies from "js-cookie";
 import { encryptData } from "@/lib/crypto";
@@ -19,7 +19,11 @@ export function OTPVerificationForm() {
     const [canResend, setCanResend] = useState(false);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const email = useAuthStore((state) => state.loginEmail);
+    const otpFlowFromStore = useAuthStore((state) => state.otpFlow);
+
+    const flow = searchParams.get("flow") || otpFlowFromStore || "login";
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -89,21 +93,42 @@ export function OTPVerificationForm() {
     });
 
     const verifyMutation = useMutation({
-        mutationFn: (code: string) =>
-            authService.generateToken({
-                channel: "email",
-                identifier: email || "",
-                code,
-            }),
-        onSuccess: (response) => {
-            if (response.data?.token) {
-                // Save encrypted token in cookies for 24 hours
-                const encryptedToken = encryptData(response.data.token);
-                Cookies.set("fajiri_token", encryptedToken, {
-                    expires: 1,
+        mutationFn: (code: string) => {
+            if (flow === "reset-password") {
+                return otpService.verifyOtp({
+                    channel: "email",
+                    identifier: email || "",
+                    code,
                 });
-                toast.success("Verification successful");
-                router.push("/dashboard");
+            } else {
+                return authService.generateToken({
+                    channel: "email",
+                    identifier: email || "",
+                    code,
+                });
+            }
+        },
+        onSuccess: (response: any) => {
+            if (flow === "reset-password") {
+                const token = response.data?.token;
+                if (token) {
+                    toast.success("OTP verified. Please enter your new password.");
+                    router.push(
+                        `/change-password?token=${encodeURIComponent(token)}`,
+                    );
+                } else {
+                    toast.error("Failed to retrieve reset token");
+                }
+            } else {
+                if (response.data?.token) {
+                    // Save encrypted token in cookies for 24 hours
+                    const encryptedToken = encryptData(response.data.token);
+                    Cookies.set("fajiri_token", encryptedToken, {
+                        expires: 1,
+                    });
+                    toast.success("Verification successful");
+                    router.push("/dashboard");
+                }
             }
         },
         onError: (error: any) => {

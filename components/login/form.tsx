@@ -41,8 +41,8 @@ export function LoginForm() {
         mutationFn: (data: LoginFormValues) => authService.login(data),
         onSuccess: (response, variables) => {
             if (response.data) {
-                setAuthData(response.data, variables.email);
-                router.push("/verify-otp");
+                setAuthData(response.data, variables.email, "login");
+                router.push("/verify-otp?flow=login");
             }
         },
         onError: (error) => {

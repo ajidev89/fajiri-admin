@@ -33,7 +33,7 @@ import { useAuthStore } from "@/store/auth-store";
 
 export default function DashboardPage() {
     const { user } = useAuthStore();
-    const isFundraiser = user?.role.slug === "fundraiser";
+    const isFundraiser = user?.role?.slug === "fundraiser";
     const filterParams = isFundraiser ? { added_by: user?.id } : {};
 
     const {

@@ -35,10 +35,10 @@ export function ForgetPasswordForm() {
         mutationFn: (data: LoginFormValues) =>
             otpService.sendOtp({ channel: "email", identifier: data.email }),
         onSuccess: (_, variables) => {
-            // Store email for verify OTP step
-            setAuthData({} as any, variables.email);
+            // Store email for verify OTP step with reset-password flow
+            setAuthData(null, variables.email, "reset-password");
             toast.success("Verification code sent to your email");
-            router.push("/verify-otp");
+            router.push("/verify-otp?flow=reset-password");
         },
         onError: (error: any) => {
             toast.error(error.message || "Failed to send verification code");
