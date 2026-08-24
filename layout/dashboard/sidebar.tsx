@@ -68,13 +68,13 @@ export function Sidebar() {
     const clearAuthData = useAuthStore((state) => state.clearAuthData);
 
     const checkPermission = (itemLabel: string) => {
-        if (!user || !user.role) return false;
-        
+        if (!user || !user.role) return itemLabel === "Dashboard";
+
         // Super admin sees everything
-        if (user.role.slug === 'super-admin') return true;
+        if (user.role?.slug === "super-admin") return true;
 
         // Fundraiser custom logic
-        if (user.role.slug === 'fundraiser') {
+        if (user.role?.slug === "fundraiser") {
             return ["Dashboard", "Campaigns", "Needs"].includes(itemLabel);
         }
 

@@ -5,7 +5,13 @@ import { User } from "@/services/auth";
 interface AuthState {
     user: User | null;
     loginEmail: string | null;
-    setAuthData: (user: User, email: string) => void;
+    otpFlow: "login" | "reset-password" | null;
+    setAuthData: (
+        user: User | null,
+        email: string,
+        flow?: "login" | "reset-password" | null,
+    ) => void;
+    setOtpFlow: (flow: "login" | "reset-password" | null) => void;
     setUser: (user: User) => void;
     clearAuthData: () => void;
 }
@@ -15,13 +21,29 @@ export const useAuthStore = create<AuthState>()(
         (set) => ({
             user: null,
             loginEmail: null,
-            setAuthData: (user, email) => set({ user, loginEmail: email }),
+            otpFlow: null,
+            setAuthData: (user, email, flow = "login") =>
+                set({ user, loginEmail: email, otpFlow: flow }),
+            setOtpFlow: (flow) => set({ otpFlow: flow }),
             setUser: (user) => set({ user }),
-            clearAuthData: () => set({ user: null, loginEmail: null }),
+            clearAuthData: () =>
+                set({ user: null, loginEmail: null, otpFlow: null }),
         }),
         {
             name: "fajiri-auth-storage",
             storage: createJSONStorage(() => localStorage),
+            version: 2,
+            migrate: (persistedState: any, version: number) => {
+                if (version < 2) {
+                    // Reset stale or incompatible localStorage from earlier app versions
+                    return {
+                        user: null,
+                        loginEmail: null,
+                        otpFlow: null,
+                    };
+                }
+                return persistedState as AuthState;
+            },
         }
     )
 );
