@@ -41,6 +41,12 @@ export function LoginForm() {
         mutationFn: (data: LoginFormValues) => authService.login(data),
         onSuccess: (response, variables) => {
             if (response.data) {
+                if (response.data.role?.slug === "user") {
+                    toast.error(
+                        "Access denied. This portal is for administrators only.",
+                    );
+                    return;
+                }
                 setAuthData(response.data, variables.email, "login");
                 router.push("/verify-otp?flow=login");
             }
