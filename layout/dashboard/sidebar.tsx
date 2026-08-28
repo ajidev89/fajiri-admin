@@ -53,8 +53,8 @@ const bottomSidebarItems = [
         href: "https://dashboard.tawk.to/login",
         target: "_blank",
     },
-    { label: "Logout", icon: LogOut, href: "/logout" },
 ];
+
 
 import { useSidebar } from "@/layout/dashboard/index";
 import { X } from "lucide-react";
@@ -106,7 +106,7 @@ export function Sidebar() {
     const filteredBottomItems = React.useMemo(() => {
         if (user?.role?.slug === 'fundraiser') {
             return bottomSidebarItems.filter((item) =>
-                ["Settings", "Logout"].includes(item.label),
+                ["Settings"].includes(item.label),
             );
         }
         return bottomSidebarItems;
@@ -198,29 +198,6 @@ export function Sidebar() {
             <div className="p-4 border-t border-[#E9EEF2] space-y-2">
                 {filteredBottomItems.map((item) => {
                     const isActive = pathname === item.href;
-                    if (item.label === "Logout") {
-                        return (
-                            <button
-                                key={item.label}
-                                onClick={handleLogout}
-                                disabled={logoutMutation.isPending}
-                                className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group text-[#F04438] hover:bg-[#FFF4F3] disabled:opacity-50",
-                                )}
-                            >
-                                <item.icon
-                                    className={cn(
-                                        "h-5 w-5 transition-colors text-[#F04438]",
-                                    )}
-                                />
-                                <span>
-                                    {logoutMutation.isPending
-                                        ? "Logging out..."
-                                        : "Logout"}
-                                </span>
-                            </button>
-                        );
-                    }
                     return (
                         <Link
                             key={item.label}
@@ -245,6 +222,18 @@ export function Sidebar() {
                         </Link>
                     );
                 })}
+
+                {/* Logout — always visible regardless of role */}
+                <button
+                    onClick={handleLogout}
+                    disabled={logoutMutation.isPending}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group text-[#F04438] hover:bg-[#FFF4F3] disabled:opacity-50"
+                >
+                    <LogOut className="h-5 w-5 transition-colors text-[#F04438]" />
+                    <span>
+                        {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                    </span>
+                </button>
             </div>
         </aside>
     );
