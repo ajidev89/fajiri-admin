@@ -63,14 +63,14 @@ export interface CreateUpdatePinPayload {
 }
 
 export const usersService = {
-    getUsers() {
+    getUsers(params?: Record<string, string>) {
         return apiClient.get<{
             data: UserWithWallet[];
             links: any;
             meta: any;
             message?: string;
             status?: boolean;
-        }>("/users");
+        }>("/users", params);
     },
 
     getUserById(userId: string) {
