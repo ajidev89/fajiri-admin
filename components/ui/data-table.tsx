@@ -42,6 +42,9 @@ interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
     searchKey?: string;
+    searchValue?: string;
+    onSearchChange?: (value: string) => void;
+    searchPlaceholder?: string;
     title?: string;
     isLoading?: boolean;
 }
@@ -50,6 +53,9 @@ export function DataTable<TData, TValue>({
     columns,
     data,
     searchKey,
+    searchValue,
+    onSearchChange,
+    searchPlaceholder = "Search...",
     title,
     isLoading,
 }: DataTableProps<TData, TValue>) {
@@ -87,15 +93,23 @@ export function DataTable<TData, TValue>({
                 {title && <h2 className="text-base sm:text-lg font-bold text-[#101828]">{title}</h2>}
                 
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-                    {searchKey && (
+                    {(searchKey || onSearchChange) && (
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
                             <Input
-                                placeholder={`Search...`}
-                                value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-                                onChange={(event) =>
-                                    table.getColumn(searchKey)?.setFilterValue(event.target.value)
+                                placeholder={searchPlaceholder}
+                                value={
+                                    onSearchChange
+                                        ? (searchValue ?? "")
+                                        : ((table.getColumn(searchKey!)?.getFilterValue() as string) ?? "")
                                 }
+                                onChange={(event) => {
+                                    if (onSearchChange) {
+                                        onSearchChange(event.target.value);
+                                        return;
+                                    }
+                                    table.getColumn(searchKey!)?.setFilterValue(event.target.value);
+                                }}
                                 className="pl-10 h-10 bg-[#F9FAFB] border-[#EAECF0] text-sm"
                             />
                         </div>

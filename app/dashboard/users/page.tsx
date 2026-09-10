@@ -43,7 +43,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { UserWithWallet, usersService } from "@/services/users";
 import { countryService } from "@/services/countries";
 import {
@@ -61,6 +61,20 @@ import { toast } from "sonner";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PROTECTED_SLUGS = ["super-admin", "admin", "user", "fundraiser"];
+
+function useDebouncedValue(value: string, delay = 350) {
+    const [debounced, setDebounced] = React.useState(value);
+    React.useEffect(() => {
+        const id = window.setTimeout(() => setDebounced(value), delay);
+        return () => window.clearTimeout(id);
+    }, [value, delay]);
+    return debounced;
+}
+
+function userSearchParams(search: string) {
+    const term = search.trim();
+    return term ? { search: term } : undefined;
+}
 
 const statusBadge = (status: string) => (
     <div
@@ -285,9 +299,13 @@ function MemberActionCell({
 }
 
 function MembersTab({ roles }: { roles: Role[] }) {
+    const [search, setSearch] = React.useState("");
+    const debouncedSearch = useDebouncedValue(search);
+
     const { data: usersRes, isLoading } = useQuery({
-        queryKey: ["users"],
-        queryFn: () => usersService.getUsers(),
+        queryKey: ["users", debouncedSearch],
+        queryFn: () => usersService.getUsers(userSearchParams(debouncedSearch)),
+        placeholderData: keepPreviousData,
     });
 
     const users = React.useMemo(() => usersRes?.data ?? [], [usersRes]);
@@ -372,7 +390,9 @@ function MembersTab({ roles }: { roles: Role[] }) {
         <DataTable
             columns={columns}
             data={users}
-            searchKey="name"
+            searchValue={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search by name, email, phone, or member ID"
             title="Members"
             isLoading={isLoading}
         />
@@ -794,10 +814,13 @@ function TeamMemberActionCell({
 
 function TeamMembersTab({ roles }: { roles: Role[] }) {
     const [addOpen, setAddOpen] = React.useState(false);
+    const [search, setSearch] = React.useState("");
+    const debouncedSearch = useDebouncedValue(search);
 
     const { data: membersRes, isLoading } = useQuery({
-        queryKey: ["team-members"],
-        queryFn: () => adminService.getTeamMembers(),
+        queryKey: ["team-members", debouncedSearch],
+        queryFn: () => adminService.getTeamMembers(userSearchParams(debouncedSearch)),
+        placeholderData: keepPreviousData,
     });
 
     const members: TeamMember[] = React.useMemo(
@@ -887,7 +910,9 @@ function TeamMembersTab({ roles }: { roles: Role[] }) {
             <DataTable
                 columns={columns}
                 data={members}
-                searchKey="name"
+                searchValue={search}
+                onSearchChange={setSearch}
+                searchPlaceholder="Search by name, email, phone, or member ID"
                 title="Team Members"
                 isLoading={isLoading}
             />

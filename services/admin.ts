@@ -60,8 +60,11 @@ export interface UpdateRolePayload {
 export const adminService = {
     // ── Team Members ──────────────────────────────────────────────────────────
 
-    getTeamMembers() {
-        return apiClient.get<PaginatedResponse<TeamMember>>("/admin/users");
+    getTeamMembers(params?: Record<string, string>) {
+        return apiClient.get<PaginatedResponse<TeamMember>>(
+            "/admin/users",
+            params,
+        );
     },
 
     createTeamMember(payload: CreateTeamMemberPayload) {
