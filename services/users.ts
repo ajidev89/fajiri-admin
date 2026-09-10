@@ -1,4 +1,4 @@
-import { apiClient, ApiResponse } from "./api-client";
+import { apiClient, ApiResponse, PaginatedResponse } from "./api-client";
 import { User } from "./auth";
 
 export interface Wallet {
@@ -64,13 +64,7 @@ export interface CreateUpdatePinPayload {
 
 export const usersService = {
     getUsers(params?: Record<string, string>) {
-        return apiClient.get<{
-            data: UserWithWallet[];
-            links: any;
-            meta: any;
-            message?: string;
-            status?: boolean;
-        }>("/users", params);
+        return apiClient.get<PaginatedResponse<UserWithWallet>>("/users", params);
     },
 
     getUserById(userId: string) {
