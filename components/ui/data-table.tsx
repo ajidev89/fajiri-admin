@@ -47,6 +47,20 @@ interface DataTableProps<TData, TValue> {
     searchPlaceholder?: string;
     title?: string;
     isLoading?: boolean;
+    page?: number;
+    pageCount?: number;
+    onPageChange?: (page: number) => void;
+    total?: number;
+}
+
+function visiblePages(current: number, total: number, max = 5) {
+    if (total <= 0) return [1];
+    if (total <= max) return Array.from({ length: total }, (_, i) => i + 1);
+    const half = Math.floor(max / 2);
+    let start = Math.max(1, current - half);
+    const end = Math.min(total, start + max - 1);
+    start = Math.max(1, end - max + 1);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
 export function DataTable<TData, TValue>({
@@ -58,6 +72,10 @@ export function DataTable<TData, TValue>({
     searchPlaceholder = "Search...",
     title,
     isLoading,
+    page,
+    pageCount,
+    onPageChange,
+    total,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -67,11 +85,13 @@ export function DataTable<TData, TValue>({
         setIsMounted(true);
     }, []);
 
+    const isServerPaginated = typeof onPageChange === "function" && page != null;
+
     const table = useReactTable({
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
+        ...(isServerPaginated ? {} : { getPaginationRowModel: getPaginationRowModel() }),
         onSortingChange: setSorting,
         getSortedRowModel: getSortedRowModel(),
         onColumnFiltersChange: setColumnFilters,
@@ -81,6 +101,22 @@ export function DataTable<TData, TValue>({
             columnFilters,
         },
     });
+
+    const currentPage = isServerPaginated
+        ? page
+        : table.getState().pagination.pageIndex + 1;
+    const totalPages = isServerPaginated
+        ? Math.max(pageCount ?? 1, 1)
+        : Math.max(table.getPageCount(), 1);
+    const canPrevious = isServerPaginated ? currentPage > 1 : table.getCanPreviousPage();
+    const canNext = isServerPaginated ? currentPage < totalPages : table.getCanNextPage();
+    const goToPage = (nextPage: number) => {
+        if (isServerPaginated) {
+            onPageChange(nextPage);
+            return;
+        }
+        table.setPageIndex(nextPage - 1);
+    };
 
     if (!isMounted) {
         return <div className="bg-white rounded-2xl border border-[#EAECF0] h-96 animate-pulse" />;
@@ -192,15 +228,20 @@ export function DataTable<TData, TValue>({
             {/* Table Pagination */}
             <div className="p-4 border-t border-[#EAECF0] flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex-1 text-sm text-[#475467] order-2 sm:order-1">
-                   <span className="font-medium text-[#101828]">Page {table.getState().pagination.pageIndex + 1}</span> of{" "}
-                   <span className="font-medium text-[#101828]">{table.getPageCount()}</span>
+                   <span className="font-medium text-[#101828]">Page {currentPage}</span> of{" "}
+                   <span className="font-medium text-[#101828]">{totalPages}</span>
+                   {typeof total === "number" && (
+                       <span className="ml-2">
+                           · {total} {total === 1 ? "result" : "results"}
+                       </span>
+                   )}
                 </div>
                 <div className="flex items-center gap-2 order-1 sm:order-2 w-full sm:w-auto justify-between sm:justify-end">
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={!canPrevious}
                         className="text-[#344054] hover:bg-[#F9FAFB] h-10 px-3"
                     >
                         <ChevronLeft className="h-4 w-4 sm:mr-2" /> 
@@ -209,20 +250,20 @@ export function DataTable<TData, TValue>({
                     
                     {/* Page Numbers - Shown only on larger screens */}
                     <div className="hidden md:flex items-center gap-1 mx-2">
-                        {[...Array(Math.min(table.getPageCount(), 5))].map((_, i) => (
+                        {visiblePages(currentPage, totalPages).map((pageNumber) => (
                             <Button
-                                key={i}
-                                variant={table.getState().pagination.pageIndex === i ? "default" : "ghost"}
+                                key={pageNumber}
+                                variant={currentPage === pageNumber ? "default" : "ghost"}
                                 size="icon"
                                 className={cn(
                                     "h-8 w-8 rounded-lg text-xs font-semibold",
-                                    table.getState().pagination.pageIndex === i 
+                                    currentPage === pageNumber 
                                         ? "bg-[#0E3B5D] text-white hover:bg-[#0E3B5D]/90" 
                                         : "text-[#475467] hover:bg-[#F9FAFB]"
                                 )}
-                                onClick={() => table.setPageIndex(i)}
+                                onClick={() => goToPage(pageNumber)}
                             >
-                                {i + 1}
+                                {pageNumber}
                             </Button>
                         ))}
                     </div>
@@ -230,8 +271,8 @@ export function DataTable<TData, TValue>({
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => table.nextPage()}
-                        disabled={!table.getCanNextPage()}
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={!canNext}
                         className="text-[#344054] hover:bg-[#F9FAFB] h-10 px-3"
                     >
                         <span className="hidden sm:inline">Next</span>

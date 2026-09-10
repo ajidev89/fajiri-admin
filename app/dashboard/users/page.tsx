@@ -71,9 +71,11 @@ function useDebouncedValue(value: string, delay = 350) {
     return debounced;
 }
 
-function userSearchParams(search: string) {
+function userListParams(search: string, page: number) {
+    const params: Record<string, string> = { page: String(page) };
     const term = search.trim();
-    return term ? { search: term } : undefined;
+    if (term) params.search = term;
+    return params;
 }
 
 const statusBadge = (status: string) => (
@@ -300,22 +302,25 @@ function MemberActionCell({
 
 function MembersTab({ roles }: { roles: Role[] }) {
     const [search, setSearch] = React.useState("");
+    const [page, setPage] = React.useState(1);
     const debouncedSearch = useDebouncedValue(search);
 
     const { data: usersRes, isLoading } = useQuery({
-        queryKey: ["users", debouncedSearch],
-        queryFn: () => usersService.getUsers(userSearchParams(debouncedSearch)),
+        queryKey: ["users", debouncedSearch, page],
+        queryFn: () => usersService.getUsers(userListParams(debouncedSearch, page)),
         placeholderData: keepPreviousData,
     });
 
     const users = React.useMemo(() => usersRes?.data ?? [], [usersRes]);
+    const meta = usersRes?.meta;
+    const rowOffset = meta?.from ? meta.from - 1 : (page - 1) * (meta?.per_page ?? 10);
 
     const columns: ColumnDef<UserWithWallet>[] = [
         {
             id: "no",
             header: "No",
             cell: ({ row }) => (
-                <span className="text-[#667085]">{row.index + 1}</span>
+                <span className="text-[#667085]">{rowOffset + row.index + 1}</span>
             ),
         },
         {
@@ -391,10 +396,17 @@ function MembersTab({ roles }: { roles: Role[] }) {
             columns={columns}
             data={users}
             searchValue={search}
-            onSearchChange={setSearch}
+            onSearchChange={(value) => {
+                setSearch(value);
+                setPage(1);
+            }}
             searchPlaceholder="Search by name, email, phone, or member ID"
             title="Members"
             isLoading={isLoading}
+            page={page}
+            pageCount={meta?.last_page ?? 1}
+            onPageChange={setPage}
+            total={meta?.total}
         />
     );
 }
@@ -815,11 +827,12 @@ function TeamMemberActionCell({
 function TeamMembersTab({ roles }: { roles: Role[] }) {
     const [addOpen, setAddOpen] = React.useState(false);
     const [search, setSearch] = React.useState("");
+    const [page, setPage] = React.useState(1);
     const debouncedSearch = useDebouncedValue(search);
 
     const { data: membersRes, isLoading } = useQuery({
-        queryKey: ["team-members", debouncedSearch],
-        queryFn: () => adminService.getTeamMembers(userSearchParams(debouncedSearch)),
+        queryKey: ["team-members", debouncedSearch, page],
+        queryFn: () => adminService.getTeamMembers(userListParams(debouncedSearch, page)),
         placeholderData: keepPreviousData,
     });
 
@@ -827,13 +840,15 @@ function TeamMembersTab({ roles }: { roles: Role[] }) {
         () => membersRes?.data ?? [],
         [membersRes],
     );
+    const meta = membersRes?.meta;
+    const rowOffset = meta?.from ? meta.from - 1 : (page - 1) * (meta?.per_page ?? 15);
 
     const columns: ColumnDef<TeamMember>[] = [
         {
             id: "no",
             header: "No",
             cell: ({ row }) => (
-                <span className="text-[#667085]">{row.index + 1}</span>
+                <span className="text-[#667085]">{rowOffset + row.index + 1}</span>
             ),
         },
         {
@@ -911,10 +926,17 @@ function TeamMembersTab({ roles }: { roles: Role[] }) {
                 columns={columns}
                 data={members}
                 searchValue={search}
-                onSearchChange={setSearch}
+                onSearchChange={(value) => {
+                    setSearch(value);
+                    setPage(1);
+                }}
                 searchPlaceholder="Search by name, email, phone, or member ID"
                 title="Team Members"
                 isLoading={isLoading}
+                page={page}
+                pageCount={meta?.last_page ?? 1}
+                onPageChange={setPage}
+                total={meta?.total}
             />
             <AddTeamMemberDialog
                 open={addOpen}
