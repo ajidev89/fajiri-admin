@@ -8,19 +8,23 @@ import * as React from "react";
 import { useState } from "react";
 import { AnnouncementModal } from "@/components/dashboard/announcements/announcement-modal";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { announcementService, Announcement } from "@/services/announcements";
 import dayjs from "dayjs";
 
 export default function AnnouncementsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [page, setPage] = useState(1);
 
     const { data: announcementsRes, isLoading } = useQuery({
-        queryKey: ["announcements"],
-        queryFn: () => announcementService.getAnnouncements(),
+        queryKey: ["announcements", page],
+        queryFn: () =>
+            announcementService.getAnnouncements({ page: String(page) }),
+        placeholderData: keepPreviousData,
     });
 
-    const announcements = announcementsRes?.data?.data || [];
+    const announcements = announcementsRes?.data ?? [];
+    const meta = announcementsRes?.meta;
 
     const handleCreate = () => {
         setIsModalOpen(true);
@@ -70,14 +74,17 @@ export default function AnnouncementsPage() {
                     </Button>
                 </div>
 
-                <div className="bg-white rounded-xl border border-[#EAECF0] overflow-hidden flex-1">
-                    <DataTable
-                        columns={columns}
-                        data={announcements}
-                        isLoading={isLoading}
-                        searchKey="title"
-                    />
-                </div>
+                <DataTable
+                    columns={columns}
+                    data={announcements}
+                    isLoading={isLoading}
+                    searchKey="title"
+                    searchPlaceholder="Search announcements"
+                    page={page}
+                    pageCount={meta?.last_page ?? 1}
+                    onPageChange={setPage}
+                    total={meta?.total}
+                />
             </div>
 
             <AnnouncementModal 
