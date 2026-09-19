@@ -18,6 +18,13 @@ export interface Donation {
     converted_amount?: string;
     status: string;
     reference: string;
+    type?: "campaign" | "need";
+    title?: string | null;
+    rate?: number | null;
+    is_flagged?: boolean;
+    flagged_at?: string | null;
+    flag_reason?: string | null;
+    flagged_by?: { id: string; email: string } | null;
     created_at: string;
     updated_at: string;
     deleted_at?: string | null;
@@ -30,6 +37,22 @@ export interface DonationWithCampaign extends Donation {
 export interface DonationWithNeed extends Donation {
     donatable_type: "App\\Models\\Need";
     donatable: Need;
+}
+
+export type AnyDonation = DonationWithCampaign | DonationWithNeed;
+
+export function getDonationType(donation: Donation): "campaign" | "need" {
+    if (donation.type) return donation.type;
+    return donation.donatable_type?.endsWith("Campaign") ? "campaign" : "need";
+}
+
+export function getDonationTitle(donation: Donation): string {
+    if (donation.title) return donation.title;
+    return (
+        (getDonationType(donation) === "campaign"
+            ? donation.donatable?.title
+            : donation.donatable?.name) ?? "—"
+    );
 }
 
 export interface DonateViaWalletPayload {
@@ -55,10 +78,29 @@ export const donationService = {
         );
     },
 
-    getDonations() {
+    getDonations(params?: { type?: "campaign" | "need" }) {
+        const query: Record<string, string> = {};
+        if (params?.type) query.type = params.type;
         return apiClient.get<
             ApiResponse<DonationWithCampaign[] | DonationWithNeed[]>
-        >("/donations");
+        >("/donations", query);
+    },
+
+    getDonation(id: string) {
+        return apiClient.get<ApiResponse<AnyDonation>>(`/donations/${id}`);
+    },
+
+    flagDonation(id: string, reason: string) {
+        return apiClient.post<ApiResponse<AnyDonation>>(
+            `/donations/${id}/flag`,
+            { reason },
+        );
+    },
+
+    unflagDonation(id: string) {
+        return apiClient.delete<ApiResponse<AnyDonation>>(
+            `/donations/${id}/flag`,
+        );
     },
 
     initializePaystackDonation(

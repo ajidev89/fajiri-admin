@@ -11,6 +11,7 @@ import {
     getFilteredRowModel,
     ColumnFiltersState,
 } from "@tanstack/react-table";
+import * as React from "react";
 import { useState, useEffect } from "react";
 import { 
     Table, 
@@ -51,6 +52,8 @@ interface DataTableProps<TData, TValue> {
     pageCount?: number;
     onPageChange?: (page: number) => void;
     total?: number;
+    /** Custom filter controls rendered in the toolbar in place of the default Filter button. */
+    filters?: React.ReactNode;
 }
 
 function visiblePages(current: number, total: number, max = 5) {
@@ -76,6 +79,7 @@ export function DataTable<TData, TValue>({
     pageCount,
     onPageChange,
     total,
+    filters,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -151,9 +155,11 @@ export function DataTable<TData, TValue>({
                         </div>
                     )}
                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <Button variant="outline" className="h-10 flex-1 sm:flex-none border-[#EAECF0] text-[#344054] font-medium gap-2">
-                            <Filter className="h-4 w-4" /> Filter
-                        </Button>
+                        {filters ?? (
+                            <Button variant="outline" className="h-10 flex-1 sm:flex-none border-[#EAECF0] text-[#344054] font-medium gap-2">
+                                <Filter className="h-4 w-4" /> Filter
+                            </Button>
+                        )}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="h-10 flex-1 sm:flex-none border-[#EAECF0] text-[#344054] font-medium gap-2 hidden sm:flex">
