@@ -32,6 +32,8 @@ export interface Campaign {
     title: string;
     body: string;
     type: CampaignCategoryType;
+    category_id?: number | null;
+    category?: { id: number; name: string; slug: string } | null;
     campaign_type: CampaignTypeEnum;
     images: string[] | null;
     status: string;
@@ -58,7 +60,7 @@ export interface CreateCampaignPayload {
     goal_amount: string;
     images?: File[];
     days: string;
-    type: string;
+    category_id: string;
 }
 
 export interface UpdateCampaignPayload {
@@ -68,7 +70,7 @@ export interface UpdateCampaignPayload {
     goal_amount?: string;
     status?: string;
     campaign_type?: string;
-    type?: string;
+    category_id?: string;
     days?: string;
     images?: File[];
 }
@@ -122,7 +124,7 @@ export const campaignService = {
         formData.append("currency", payload.currency);
         formData.append("goal_amount", payload.goal_amount);
         formData.append("days", payload.days);
-        formData.append("type", payload.type);
+        formData.append("category_id", payload.category_id);
         formData.append("status", "active");
         formData.append("campaign_type", "organization");
         if (payload.images) {
@@ -146,7 +148,8 @@ export const campaignService = {
         if (payload.status) formData.append("status", payload.status);
         if (payload.campaign_type)
             formData.append("campaign_type", payload.campaign_type);
-        if (payload.type) formData.append("type", payload.type);
+        if (payload.category_id)
+            formData.append("category_id", payload.category_id);
         if (payload.days) formData.append("days", payload.days);
         if (payload.images) {
             payload.images.forEach((image) => {

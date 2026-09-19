@@ -26,7 +26,8 @@ import { CurrencySelect } from "@/components/form/currency-select";
 import { CloudUpload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { campaignService, Campaign, CAMPAIGN_CATEGORY_TYPES } from "@/services/campaigns";
+import { campaignService, Campaign } from "@/services/campaigns";
+import { categoryService } from "@/services/categories";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 
@@ -60,32 +61,19 @@ export function CampaignModal({
 
     const queryClient = useQueryClient();
 
-    const { data: typesRes } = useQuery({
-        queryKey: ["campaign-types"],
-        queryFn: () => campaignService.getTypes(),
+    const { data: categoriesRes, isLoading: isLoadingCategories } = useQuery({
+        queryKey: ["categories"],
+        queryFn: () => categoryService.getCategories(),
     });
 
-    const category = React.useMemo(() => {
-        if (typesRes?.data) {
-            if (typeof typesRes.data === "object" && !Array.isArray(typesRes.data)) {
-                return Object.entries(typesRes.data).map(([key, val]) => ({
-                    value: String(val),
-                    label: String(val)
-                        .replace(/-/g, " ")
-                        .replace(/\b\w/g, (l) => l.toUpperCase()),
-                }));
-            }
-            if (Array.isArray(typesRes.data)) {
-                return (typesRes.data as any[]).map((item) => ({
-                    value: typeof item === "string" ? item : item.value || item.slug,
-                    label: typeof item === "string"
-                        ? item.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
-                        : item.label || item.name,
-                }));
-            }
-        }
-        return CAMPAIGN_CATEGORY_TYPES;
-    }, [typesRes]);
+    const category = React.useMemo(
+        () =>
+            (categoriesRes?.data ?? []).map((cat) => ({
+                value: String(cat.id),
+                label: cat.name,
+            })),
+        [categoriesRes],
+    );
 
     const methods = useForm<CampaignFormValues>({
         resolver: zodResolver(campaignSchema),
@@ -115,7 +103,7 @@ export function CampaignModal({
                 body: data.description,
                 currency: data.currency,
                 goal_amount: data.goalAmount,
-                type: data.category,
+                category_id: data.category,
                 days: data.days,
                 images:
                     data.thumbnail instanceof File
@@ -144,7 +132,7 @@ export function CampaignModal({
                 currency: data.currency,
                 days: data.days,
                 status: initialData.status,
-                type: data.category,
+                category_id: data.category,
                 images:
                     data.thumbnail instanceof File
                         ? [data.thumbnail]
@@ -167,7 +155,9 @@ export function CampaignModal({
         if (initialData) {
             reset({
                 title: initialData.title,
-                category: initialData.type || "",
+                category: initialData.category_id
+                    ? String(initialData.category_id)
+                    : "",
                 goalAmount: initialData.goal_amount.toString(),
                 currency: initialData.currency || "USD",
                 days: dayjs(initialData.end_date).diff(dayjs(initialData.created_at), 'day').toString(),
@@ -249,22 +239,26 @@ export function CampaignModal({
                             }
                             value={categoryValue}
                         >
-                            <SelectTrigger className="h-11 bg-white capitalize border-[#EAECF0]">
+                            <SelectTrigger className="h-11 bg-white border-[#EAECF0]">
                                 <SelectValue
-                                    className="capitalize"
-                                    placeholder="Select Category"
+                                    placeholder={
+                                        isLoadingCategories
+                                            ? "Loading categories..."
+                                            : "Select Category"
+                                    }
                                 />
                             </SelectTrigger>
                             <SelectContent className="bg-white">
                                 {category.map((cat) => (
-                                    <SelectItem
-                                        key={cat.value}
-                                        value={cat.value}
-                                        className="capitalize"
-                                    >
-                                        {cat.label.toLowerCase()}
+                                    <SelectItem key={cat.value} value={cat.value}>
+                                        {cat.label}
                                     </SelectItem>
                                 ))}
+                                {!isLoadingCategories && category.length === 0 && (
+                                    <div className="px-3 py-2 text-sm text-[#667085]">
+                                        No categories yet. Add one in the Categories tab.
+                                    </div>
+                                )}
                             </SelectContent>
                         </Select>
                         {errors.category && (
