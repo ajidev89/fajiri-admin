@@ -44,8 +44,8 @@ export interface SubscribeToPlanPayload {
 }
 
 export const planService = {
-    listPlans() {
-        return apiClient.get<ApiResponse<Plan[]>>("/plans");
+    listPlans(params?: Record<string, string>) {
+        return apiClient.get<ApiResponse<Plan[]>>("/plans", params);
     },
 
     createPlan(payload: UpdatePlanPayload) {

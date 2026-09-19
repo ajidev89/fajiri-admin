@@ -12,7 +12,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { listMeta, useServerTable } from "@/lib/use-server-table";
 import { categoryService, Category } from "@/services/categories";
 import { CategoryModal } from "./category-modal";
 import { toast } from "sonner";
@@ -22,10 +23,14 @@ export function CategoriesView() {
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
     const queryClient = useQueryClient();
 
+    const tableState = useServerTable({ sortBy: "name" });
+
     const { data: categoriesRes, isLoading } = useQuery({
-        queryKey: ["categories"],
-        queryFn: () => categoryService.getCategories(),
+        queryKey: ["categories", tableState.params],
+        queryFn: () => categoryService.getCategories(tableState.params),
+        placeholderData: keepPreviousData,
     });
+    const categoryMeta = listMeta(categoriesRes);
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => categoryService.deleteCategory(id),
@@ -160,6 +165,10 @@ export function CategoriesView() {
                 searchKey="name"
                 title="Category Table"
                 isLoading={isLoading}
+                {...tableState.tableProps}
+                pageCount={categoryMeta.pageCount}
+                total={categoryMeta.total}
+                sortField="name"
             />
         </div>
     );

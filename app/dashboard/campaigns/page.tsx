@@ -17,7 +17,8 @@ import {
 } from "../../../components/ui/dropdown-menu";
 import { Button } from "../../../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { STATUS_FILTER, useServerTable } from "@/lib/use-server-table";
 import { campaignService, Campaign } from "@/services/campaigns";
 import { useAuthStore } from "@/store/auth-store";
 import { CategoriesView } from "@/components/dashboard/campaigns/categories-view";
@@ -182,9 +183,19 @@ export default function CampaignsPage() {
     const { user } = useAuthStore();
     const isFundraiser = user?.role.slug === "fundraiser";
 
+    const tableState = useServerTable({
+        sortBy: "title",
+        extra: isFundraiser && user?.id ? { added_by: user.id } : {},
+    });
+
     const { data: campaignsRes, isLoading } = useQuery({
-        queryKey: ["campaigns", isFundraiser ? user?.id : "all"],
-        queryFn: () => campaignService.listCampaigns(isFundraiser ? { added_by: user?.id || "" } : {}),
+        queryKey: ["campaigns", tableState.params, isFundraiser ? user?.id : "all"],
+        queryFn: () =>
+            campaignService.listCampaigns({
+                ...tableState.params,
+                status: tableState.filters.status ?? "all",
+            }),
+        placeholderData: keepPreviousData,
     });
 
     const deleteMutation = useMutation({
@@ -325,6 +336,11 @@ export default function CampaignsPage() {
                             searchKey="title"
                             title="Campaign Table"
                             isLoading={isLoading}
+                            {...tableState.tableProps}
+                            pageCount={campaignsRes?.meta?.last_page ?? 1}
+                            total={campaignsRes?.meta?.total}
+                            filterOptions={[STATUS_FILTER]}
+                            sortField="title"
                         />
                     </div>
                 </TabsContent>

@@ -14,7 +14,8 @@ import {
     DropdownMenuItem, 
     DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { listMeta, STATUS_FILTER, useServerTable } from "@/lib/use-server-table";
 import { fundraiserService } from "@/services/fundraisers";
 import { usersService, type UserWithWallet } from "@/services/users";
 import { FundraiserModal } from "@/components/dashboard/fundraisers/fundraiser-modal";
@@ -25,9 +26,12 @@ export default function FundraiserPage() {
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const queryClient = useQueryClient();
 
+    const tableState = useServerTable({ sortBy: "email" });
+
     const { data: fundraisersRes, isLoading } = useQuery({
-        queryKey: ["fundraisers"],
-        queryFn: () => fundraiserService.listFundraisers(),
+        queryKey: ["fundraisers", tableState.params],
+        queryFn: () => fundraiserService.listFundraisers(tableState.params),
+        placeholderData: keepPreviousData,
     });
 
     const fundraisers = fundraisersRes?.data || [];
@@ -201,6 +205,11 @@ export default function FundraiserPage() {
                     searchKey="email" 
                     title="Fundraiser Directory" 
                     isLoading={isLoading}
+                    {...tableState.tableProps}
+                    pageCount={listMeta(fundraisersRes).pageCount}
+                    total={listMeta(fundraisersRes).total}
+                    filterOptions={[STATUS_FILTER]}
+                    sortField="email"
                 />
             </div>
         </DashboardLayout>

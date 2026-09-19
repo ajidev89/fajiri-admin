@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { FAMILY_STATUS_FILTER, GENDER_FILTER, listMeta, useServerTable } from "@/lib/use-server-table";
 import { familyTreeService, FamilyTreeNode as NodeType } from "@/services/family-tree";
 import { FamilyTreeNode as FamilyTreeNodeComponent } from "./tree-node";
 import { DataTable } from "@/components/ui/data-table";
@@ -52,9 +53,12 @@ export function FamilyListView() {
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [selectedNodeName, setSelectedNodeName] = useState<string | null>(null);
 
+    const tableState = useServerTable({ sortBy: "full_name" });
+
     const { data: treeRes, isLoading } = useQuery({
-        queryKey: ["family-tree-list"],
-        queryFn: () => familyTreeService.getFamilyTree(),
+        queryKey: ["family-tree-list", tableState.params],
+        queryFn: () => familyTreeService.getFamilyTree(tableState.params),
+        placeholderData: keepPreviousData,
     });
 
     const members = React.useMemo(() => {
@@ -143,6 +147,11 @@ export function FamilyListView() {
                 searchKey="full_name"
                 title="Family Members"
                 isLoading={isLoading}
+                {...tableState.tableProps}
+                pageCount={listMeta(treeRes).pageCount}
+                total={listMeta(treeRes).total}
+                filterOptions={[GENDER_FILTER, FAMILY_STATUS_FILTER]}
+                sortField="full_name"
             />
 
             <Dialog open={!!selectedNodeId} onOpenChange={(open) => {

@@ -18,7 +18,8 @@ import {
     DropdownMenuItem, 
     DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { listMeta, useServerTable } from "@/lib/use-server-table";
 import { disbursementService, Disbursement } from "@/services/disbursements";
 import { analyticsService } from "@/services/analytics";
 import { format } from "date-fns";
@@ -32,10 +33,15 @@ export default function DisbursementsPage() {
     const [statusFilter, setStatusFilter] = useState<string>("all");
 
     const queryClient = useQueryClient();
+    const tableState = useServerTable({
+        sortBy: "created_at",
+        extra: { status: statusFilter },
+    });
 
     const { data: disbursementsRes, isLoading: isLoadingList } = useQuery({
-        queryKey: ["disbursements"],
-        queryFn: () => disbursementService.listDisbursements(),
+        queryKey: ["disbursements", tableState.params],
+        queryFn: () => disbursementService.listDisbursements(tableState.params),
+        placeholderData: keepPreviousData,
     });
 
     const { data: statsRes, isLoading: isLoadingStats } = useQuery({
@@ -43,18 +49,13 @@ export default function DisbursementsPage() {
         queryFn: () => analyticsService.getDisbursementStats(),
     });
 
-    const allDisbursements: Disbursement[] = Array.isArray(disbursementsRes?.data)
+    const disbursements: Disbursement[] = Array.isArray(disbursementsRes?.data)
         ? disbursementsRes.data
         : Array.isArray((disbursementsRes?.data as any)?.data)
         ? (disbursementsRes?.data as any).data
         : [];
     const stats = statsRes?.data;
-
-    const disbursements = React.useMemo(() => {
-        const list = Array.isArray(allDisbursements) ? allDisbursements : [];
-        if (statusFilter === "all") return list;
-        return list.filter((d) => (d.status || "").toLowerCase() === statusFilter.toLowerCase());
-    }, [allDisbursements, statusFilter]);
+    const disbursementMeta = listMeta(disbursementsRes);
 
     const handleViewDetails = (disbursement: Disbursement) => {
         setSelectedDisbursement(disbursement);
@@ -308,6 +309,10 @@ export default function DisbursementsPage() {
                         searchKey="beneficiary_name" 
                         title="Disbursement Queue" 
                         isLoading={isLoadingList}
+                        {...tableState.tableProps}
+                        pageCount={disbursementMeta.pageCount}
+                        total={disbursementMeta.total}
+                        sortField="beneficiary_name"
                     />
                 </div>
             </div>

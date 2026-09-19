@@ -11,7 +11,16 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MoreHorizontal, Plus, Search } from "lucide-react";
+import { MoreHorizontal, Plus } from "lucide-react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+    EVENT_STATUS_FILTER,
+    listMeta,
+    POLL_STATUS_FILTER,
+    POST_STATUS_FILTER,
+    STATUS_FILTER,
+    useServerTable,
+} from "@/lib/use-server-table";
 import { MediaLibrary } from "@/components/dashboard/content/media-library";
 import {
     Select,
@@ -40,7 +49,6 @@ import {
     insuranceService,
     type Insurance,
     countryService,
-    type Country,
     pollService,
     type Poll,
 } from "@/services";
@@ -731,14 +739,7 @@ const getPollColumns = (
 export default function ContentManagementPage() {
     const { user } = useAuthStore();
     const router = useRouter();
-    const [posts, setPosts] = React.useState<BlogPost[]>([]);
-    const [events, setEvents] = React.useState<Event[]>([]);
-    const [partners, setPartners] = React.useState<Partner[]>([]);
-    const [initiatives, setInitiatives] = React.useState<Initiative[]>([]);
-    const [insurances, setInsurances] = React.useState<Insurance[]>([]);
-    const [polls, setPolls] = React.useState<Poll[]>([]);
-    const [isLoading, setIsLoading] = React.useState(true);
-    const [countries, setCountries] = React.useState<Country[]>([]);
+    const queryClient = useQueryClient();
     const [selectedCountry, setSelectedCountry] = React.useState<string>("all");
     
     // Initiative Modal state
@@ -749,55 +750,71 @@ export default function ContentManagementPage() {
     const [isInsuranceModalOpen, setIsInsuranceModalOpen] = React.useState(false);
     const [selectedInsurance, setSelectedInsurance] = React.useState<Insurance | null>(null);
 
-    const fetchData = React.useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const isFundraiser = user?.role.slug === "fundraiser";
-            const params: Record<string, string> = isFundraiser && user?.id 
-                ? { added_by: user.id } 
-                : { all: "true" };
+    const isFundraiser = user?.role.slug === "fundraiser";
+    const scopeExtra: Record<string, string | undefined> = {
+        ...(isFundraiser && user?.id ? { added_by: user.id } : {}),
+        ...(selectedCountry !== "all" ? { country_id: selectedCountry } : {}),
+    };
 
-            if (selectedCountry !== "all") {
-                params.country_id = selectedCountry;
-            }
+    const postsTable = useServerTable({ sortBy: "title", extra: scopeExtra });
+    const eventsTable = useServerTable({ sortBy: "title", extra: scopeExtra });
+    const partnersTable = useServerTable({
+        sortBy: "name",
+        extra: selectedCountry !== "all" ? { country_id: selectedCountry } : {},
+    });
+    const initiativesTable = useServerTable({
+        sortBy: "title",
+        extra: isFundraiser && user?.id ? { added_by: user.id } : {},
+    });
+    const insurancesTable = useServerTable({
+        sortBy: "name",
+        extra: { all: "true" },
+    });
+    const pollsTable = useServerTable({ sortBy: "title", extra: scopeExtra });
 
-            const [postsRes, eventsRes, partnersRes, initiativesRes, insurancesRes, pollsRes] = await Promise.all([
-                blogService.getPosts(params),
-                eventService.getEvents(params),
-                partnerService.getPartners(params),
-                initiativeService.getInitiatives(params),
-                insuranceService.getInsurances({ all: "true" }),
-                pollService.getPolls(params),
-            ]);
-            setPosts(postsRes.data);
-            setEvents(eventsRes.data);
-            setPartners(partnersRes.data);
-            setInitiatives(initiativesRes.data);
-            setInsurances(insurancesRes.data);
-            setPolls(pollsRes.data);
-        } catch (error: any) {
-            toast.error(error.message || "Failed to fetch content data");
-        } finally {
-            setIsLoading(false);
-        }
-    }, [user?.id, user?.role.slug, selectedCountry]);
+    const { data: countriesRes } = useQuery({
+        queryKey: ["countries"],
+        queryFn: () => countryService.getCountries(),
+    });
+    const countries = countriesRes?.data || [];
 
-    const fetchCountries = React.useCallback(async () => {
-        try {
-            const res = await countryService.getCountries();
-            setCountries(res.data || []);
-        } catch (error) {
-            console.error("Failed to fetch countries", error);
-        }
-    }, []);
+    const { data: postsRes, isLoading: isLoadingPosts } = useQuery({
+        queryKey: ["posts", postsTable.params],
+        queryFn: () => blogService.getPosts(postsTable.params),
+        placeholderData: keepPreviousData,
+    });
+    const { data: eventsRes, isLoading: isLoadingEvents } = useQuery({
+        queryKey: ["events", eventsTable.params],
+        queryFn: () => eventService.getEvents(eventsTable.params),
+        placeholderData: keepPreviousData,
+    });
+    const { data: partnersRes, isLoading: isLoadingPartners } = useQuery({
+        queryKey: ["partners", partnersTable.params],
+        queryFn: () => partnerService.getPartners(partnersTable.params),
+        placeholderData: keepPreviousData,
+    });
+    const { data: initiativesRes, isLoading: isLoadingInitiatives } = useQuery({
+        queryKey: ["initiatives", initiativesTable.params],
+        queryFn: () => initiativeService.getInitiatives(initiativesTable.params),
+        placeholderData: keepPreviousData,
+    });
+    const { data: insurancesRes, isLoading: isLoadingInsurances } = useQuery({
+        queryKey: ["insurances", insurancesTable.params],
+        queryFn: () => insuranceService.getInsurances(insurancesTable.params),
+        placeholderData: keepPreviousData,
+    });
+    const { data: pollsRes, isLoading: isLoadingPolls } = useQuery({
+        queryKey: ["admin-polls", pollsTable.params],
+        queryFn: () => pollService.getPolls(pollsTable.params),
+        placeholderData: keepPreviousData,
+    });
 
-    React.useEffect(() => {
-        fetchData();
-    }, [fetchData]);
-
-    React.useEffect(() => {
-        fetchCountries();
-    }, [fetchCountries]);
+    const posts = postsRes?.data ?? [];
+    const events = eventsRes?.data ?? [];
+    const partners = partnersRes?.data ?? [];
+    const initiatives = initiativesRes?.data ?? [];
+    const insurances = insurancesRes?.data ?? [];
+    const polls = pollsRes?.data ?? [];
 
     const handleDeletePost = async (id: string) => {
         if (!confirm("Are you sure you want to delete this post?")) return;
@@ -805,7 +822,7 @@ export default function ContentManagementPage() {
         try {
             await blogService.deletePost(id);
             toast.success("Post deleted successfully");
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: ["posts"] });
         } catch (error: any) {
             toast.error(error.message || "Failed to delete post");
         }
@@ -817,7 +834,7 @@ export default function ContentManagementPage() {
         try {
             await eventService.deleteEvent(id);
             toast.success("Event deleted successfully");
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: ["events"] });
         } catch (error: any) {
             toast.error(error.message || "Failed to delete event");
         }
@@ -829,7 +846,7 @@ export default function ContentManagementPage() {
         try {
             await partnerService.deletePartner(id);
             toast.success("Partner deleted successfully");
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: ["partners"] });
         } catch (error: any) {
             toast.error(error.message || "Failed to delete partner");
         }
@@ -841,7 +858,7 @@ export default function ContentManagementPage() {
         try {
             await initiativeService.deleteInitiative(id);
             toast.success("Initiative deleted successfully");
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: ["initiatives"] });
         } catch (error: any) {
             toast.error(error.message || "Failed to delete initiative");
         }
@@ -863,7 +880,7 @@ export default function ContentManagementPage() {
         try {
             await insuranceService.deleteInsurance(id);
             toast.success("Insurance provider deleted successfully");
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: ["insurances"] });
         } catch (error: any) {
             toast.error(error.message || "Failed to delete insurance provider");
         }
@@ -914,7 +931,7 @@ export default function ContentManagementPage() {
         try {
             await pollService.deletePoll(id);
             toast.success("Poll deleted successfully");
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: ["admin-polls"] });
         } catch (error: any) {
             toast.error(error.message || "Failed to delete poll");
         }
@@ -1024,7 +1041,12 @@ export default function ContentManagementPage() {
                             data={posts}
                             searchKey="title"
                             title="Blog Posts Table"
-                            isLoading={isLoading}
+                            isLoading={isLoadingPosts}
+                            {...postsTable.tableProps}
+                            pageCount={listMeta(postsRes).pageCount}
+                            total={listMeta(postsRes).total}
+                            filterOptions={[POST_STATUS_FILTER]}
+                            sortField="title"
                         />
                     </TabsContent>
 
@@ -1053,7 +1075,12 @@ export default function ContentManagementPage() {
                             data={events}
                             searchKey="title"
                             title="Events Table"
-                            isLoading={isLoading}
+                            isLoading={isLoadingEvents}
+                            {...eventsTable.tableProps}
+                            pageCount={listMeta(eventsRes).pageCount}
+                            total={listMeta(eventsRes).total}
+                            filterOptions={[EVENT_STATUS_FILTER]}
+                            sortField="title"
                         />
                     </TabsContent>
 
@@ -1080,7 +1107,11 @@ export default function ContentManagementPage() {
                             data={partners}
                             searchKey="name"
                             title="Partners Table"
-                            isLoading={isLoading}
+                            isLoading={isLoadingPartners}
+                            {...partnersTable.tableProps}
+                            pageCount={listMeta(partnersRes).pageCount}
+                            total={listMeta(partnersRes).total}
+                            sortField="name"
                         />
                     </TabsContent>
 
@@ -1112,7 +1143,12 @@ export default function ContentManagementPage() {
                             data={initiatives}
                             searchKey="title"
                             title="Initiatives Table"
-                            isLoading={isLoading}
+                            isLoading={isLoadingInitiatives}
+                            {...initiativesTable.tableProps}
+                            pageCount={listMeta(initiativesRes).pageCount}
+                            total={listMeta(initiativesRes).total}
+                            filterOptions={[STATUS_FILTER]}
+                            sortField="title"
                         />
                     </TabsContent>
 
@@ -1137,7 +1173,11 @@ export default function ContentManagementPage() {
                             data={insurances}
                             searchKey="name"
                             title="Insurance Providers Table"
-                            isLoading={isLoading}
+                            isLoading={isLoadingInsurances}
+                            {...insurancesTable.tableProps}
+                            pageCount={listMeta(insurancesRes).pageCount}
+                            total={listMeta(insurancesRes).total}
+                            sortField="name"
                         />
                     </TabsContent>
 
@@ -1162,7 +1202,12 @@ export default function ContentManagementPage() {
                             data={polls}
                             searchKey="title"
                             title="Polls Table"
-                            isLoading={isLoading}
+                            isLoading={isLoadingPolls}
+                            {...pollsTable.tableProps}
+                            pageCount={listMeta(pollsRes).pageCount}
+                            total={listMeta(pollsRes).total}
+                            filterOptions={[POLL_STATUS_FILTER]}
+                            sortField="title"
                         />
                     </TabsContent>
                 </Tabs>

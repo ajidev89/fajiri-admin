@@ -4,7 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { listMeta, useServerTable } from "@/lib/use-server-table";
 import { leaderboardService, LeaderboardMember } from "@/services/leaderboard";
 import { countryService } from "@/services/countries";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,8 +17,27 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
+function memberCountryIso(member: LeaderboardMember) {
+    return (
+        member.country_iso ||
+        member.country_iso2 ||
+        member.country?.iso2 ||
+        ""
+    ).toUpperCase();
+}
+
+function memberFlagSrc(member: LeaderboardMember) {
+    if (member.country?.flag) return member.country.flag;
+    const iso = memberCountryIso(member).toLowerCase();
+    return iso ? `https://flagcdn.com/w40/${iso}.png` : "";
+}
+
 export function LeaderboardView() {
     const [selectedCountryId, setSelectedCountryId] = React.useState<string>("all");
+    const tableState = useServerTable({
+        sortBy: "total_engagement",
+        extra: selectedCountryId !== "all" ? { country_id: selectedCountryId } : {},
+    });
 
     const { data: countriesRes } = useQuery({
         queryKey: ["countries"],
@@ -26,18 +46,12 @@ export function LeaderboardView() {
     const countries = countriesRes?.data || [];
 
     const { data: leaderboardRes, isLoading } = useQuery({
-        queryKey: ["leaderboard", selectedCountryId],
-        queryFn: () => leaderboardService.getLeaderboard(selectedCountryId !== "all" ? { country_id: selectedCountryId } : undefined),
+        queryKey: ["leaderboard", tableState.params],
+        queryFn: () => leaderboardService.getLeaderboard(tableState.params),
+        placeholderData: keepPreviousData,
     });
-
-    // If the backend doesn't sort them, we should sort by total_engagement descending.
-    // Assuming backend handles sorting for now, but we'll sort here as a fallback if needed.
-    const members = React.useMemo(() => {
-        const data = leaderboardRes?.data || [];
-        return [...data].sort(
-            (a, b) => b.total_engagement - a.total_engagement,
-        );
-    }, [leaderboardRes]);
+    const leaderboardMeta = listMeta(leaderboardRes);
+    const members = leaderboardRes?.data || [];
 
     const columns: ColumnDef<LeaderboardMember>[] = [
         {
@@ -61,22 +75,34 @@ export function LeaderboardView() {
                     member.name ||
                     "Unknown Member";
 
+                const iso = memberCountryIso(member);
+                const flagSrc = memberFlagSrc(member);
+
                 return (
                     <Link
                         href={`/dashboard/users/${member.id}`}
                         className="flex items-center gap-3 group hover:opacity-80 transition-opacity"
                     >
-                        <Avatar className="h-10 w-10">
-                            <AvatarImage
-                                src={member.profile?.avatar || ""}
-                                className="object-cover"
-                            />
-                            <AvatarFallback>
-                                {member.profile?.first_name?.charAt(0) ||
-                                    member.name?.charAt(0) ||
-                                    "U"}
-                            </AvatarFallback>
-                        </Avatar>
+                        <div className="relative h-10 w-10 shrink-0">
+                            <Avatar className="h-10 w-10">
+                                <AvatarImage
+                                    src={member.profile?.avatar || ""}
+                                    className="object-cover"
+                                />
+                                <AvatarFallback>
+                                    {member.profile?.first_name?.charAt(0) ||
+                                        member.name?.charAt(0) ||
+                                        "U"}
+                                </AvatarFallback>
+                            </Avatar>
+                            {flagSrc && (
+                                <img
+                                    src={flagSrc}
+                                    alt={iso ? `${iso} flag` : "Country flag"}
+                                    className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full object-cover ring-2 ring-white"
+                                />
+                            )}
+                        </div>
                         <div className="flex flex-col">
                             <span className="font-medium text-[#101828] group-hover:text-[#0E3B5D] group-hover:underline">
                                 {fullName}
@@ -100,7 +126,7 @@ export function LeaderboardView() {
             header: "Country",
             cell: ({ row }) => (
                 <span className="text-[#667085]">
-                    {row.getValue("country_iso2") || "-"}
+                    {memberCountryIso(row.original) || "-"}
                 </span>
             ),
         },
@@ -130,7 +156,7 @@ export function LeaderboardView() {
         },
         {
             accessorKey: "referrals_count",
-            header: "Referrals",
+            header: "Human outreach",
             cell: ({ row }) => (
                 <div className="flex items-center gap-1">
                     <span className="text-[#667085]">
@@ -197,6 +223,10 @@ export function LeaderboardView() {
                 searchKey="username"
                 title="Leaderboard Table"
                 isLoading={isLoading}
+                {...tableState.tableProps}
+                pageCount={leaderboardMeta.pageCount}
+                total={leaderboardMeta.total}
+                sortField="total_engagement"
             />
         </div>
     );

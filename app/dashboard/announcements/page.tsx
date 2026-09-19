@@ -10,16 +10,16 @@ import { AnnouncementModal } from "@/components/dashboard/announcements/announce
 import { Button } from "@/components/ui/button";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { announcementService, Announcement } from "@/services/announcements";
+import { useServerTable } from "@/lib/use-server-table";
 import dayjs from "dayjs";
 
 export default function AnnouncementsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [page, setPage] = useState(1);
+    const tableState = useServerTable({ sortBy: "created_at" });
 
     const { data: announcementsRes, isLoading } = useQuery({
-        queryKey: ["announcements", page],
-        queryFn: () =>
-            announcementService.getAnnouncements({ page: String(page) }),
+        queryKey: ["announcements", tableState.params],
+        queryFn: () => announcementService.getAnnouncements(tableState.params),
         placeholderData: keepPreviousData,
     });
 
@@ -80,10 +80,10 @@ export default function AnnouncementsPage() {
                     isLoading={isLoading}
                     searchKey="title"
                     searchPlaceholder="Search announcements"
-                    page={page}
+                    {...tableState.tableProps}
                     pageCount={meta?.last_page ?? 1}
-                    onPageChange={setPage}
                     total={meta?.total}
+                    sortField="title"
                 />
             </div>
 

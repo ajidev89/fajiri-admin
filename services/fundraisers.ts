@@ -11,8 +11,8 @@ export interface CreateFundraiserPayload {
 }
 
 export const fundraiserService = {
-    listFundraisers() {
-        return apiClient.get<ApiResponse<UserWithWallet[]>>("/fundraisers");
+    listFundraisers(params?: Record<string, string>) {
+        return apiClient.get<ApiResponse<UserWithWallet[]>>("/fundraisers", params);
     },
 
     createFundraiser(payload: CreateFundraiserPayload) {

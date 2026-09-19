@@ -38,6 +38,14 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import type { ServerSort, TableFilterOption } from "@/lib/use-server-table";
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
@@ -54,6 +62,12 @@ interface DataTableProps<TData, TValue> {
     total?: number;
     /** Custom filter controls rendered in the toolbar in place of the default Filter button. */
     filters?: React.ReactNode;
+    filterOptions?: TableFilterOption[];
+    filterValues?: Record<string, string>;
+    onFilterChange?: (key: string, value: string) => void;
+    sort?: ServerSort | null;
+    onSortChange?: (sort: ServerSort) => void;
+    sortField?: string;
 }
 
 function visiblePages(current: number, total: number, max = 5) {
@@ -80,6 +94,12 @@ export function DataTable<TData, TValue>({
     onPageChange,
     total,
     filters,
+    filterOptions,
+    filterValues,
+    onFilterChange,
+    sort,
+    onSortChange,
+    sortField,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -90,6 +110,9 @@ export function DataTable<TData, TValue>({
     }, []);
 
     const isServerPaginated = typeof onPageChange === "function" && page != null;
+    const isServerSorted = typeof onSortChange === "function";
+    const isServerFiltered = typeof onSearchChange === "function" || typeof onFilterChange === "function";
+    const activeSortField = sortField || searchKey || "created_at";
 
     const table = useReactTable({
         data,
@@ -97,14 +120,23 @@ export function DataTable<TData, TValue>({
         getCoreRowModel: getCoreRowModel(),
         ...(isServerPaginated ? {} : { getPaginationRowModel: getPaginationRowModel() }),
         onSortingChange: setSorting,
-        getSortedRowModel: getSortedRowModel(),
+        ...(isServerSorted ? {} : { getSortedRowModel: getSortedRowModel() }),
         onColumnFiltersChange: setColumnFilters,
-        getFilteredRowModel: getFilteredRowModel(),
+        ...(isServerFiltered ? {} : { getFilteredRowModel: getFilteredRowModel() }),
         state: {
             sorting,
             columnFilters,
         },
     });
+
+    const applySort = (desc: boolean) => {
+        const next = { id: activeSortField, desc };
+        if (onSortChange) {
+            onSortChange(next);
+            return;
+        }
+        setSorting([next]);
+    };
 
     const currentPage = isServerPaginated
         ? page
@@ -155,10 +187,38 @@ export function DataTable<TData, TValue>({
                         </div>
                     )}
                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                        {filters ?? (
-                            <Button variant="outline" className="h-10 flex-1 sm:flex-none border-[#EAECF0] text-[#344054] font-medium gap-2">
-                                <Filter className="h-4 w-4" /> Filter
-                            </Button>
+                        {filterOptions?.length ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="h-10 flex-1 sm:flex-none border-[#EAECF0] text-[#344054] font-medium gap-2">
+                                        <Filter className="h-4 w-4" /> Filter
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-[220px] bg-white p-3 space-y-3">
+                                    {filterOptions.map((option) => (
+                                        <div key={option.key} className="space-y-1.5">
+                                            <p className="text-xs font-medium text-[#667085]">{option.label}</p>
+                                            <Select
+                                                value={filterValues?.[option.key] ?? "all"}
+                                                onValueChange={(value) => onFilterChange?.(option.key, value)}
+                                            >
+                                                <SelectTrigger className="h-9 bg-[#F9FAFB]">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {option.options.map((item) => (
+                                                        <SelectItem key={item.value} value={item.value}>
+                                                            {item.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            filters
                         )}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -167,11 +227,11 @@ export function DataTable<TData, TValue>({
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-[150px] bg-white">
-                                <DropdownMenuItem onClick={() => setSorting([{ id: searchKey || "id", desc: false }])} className="cursor-pointer">
-                                    Ascending
+                                <DropdownMenuItem onClick={() => applySort(false)} className="cursor-pointer">
+                                    Ascending{sort && !sort.desc && sort.id === activeSortField ? " ✓" : ""}
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setSorting([{ id: searchKey || "id", desc: true }])} className="cursor-pointer">
-                                    Descending
+                                <DropdownMenuItem onClick={() => applySort(true)} className="cursor-pointer">
+                                    Descending{sort?.desc && sort.id === activeSortField ? " ✓" : ""}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

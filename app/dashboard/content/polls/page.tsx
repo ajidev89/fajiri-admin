@@ -7,15 +7,15 @@ import { DataTable } from "@/components/ui/data-table";
 import DashboardLayout from "@/layout/dashboard";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { MoreHorizontal, Plus, Search } from "lucide-react";
+import { MoreHorizontal, Plus } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { listMeta, POLL_STATUS_FILTER, useServerTable } from "@/lib/use-server-table";
 import { pollService, type Poll } from "@/services/polls";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -75,12 +75,14 @@ function PollStatusBadge({ status }: { status: Poll["status"] }) {
 export default function PollsPage() {
     const router = useRouter();
     const queryClient = useQueryClient();
-    const [search, setSearch] = React.useState("");
+    const tableState = useServerTable({ sortBy: "title" });
 
     const { data, isLoading } = useQuery({
-        queryKey: ["admin-polls", search],
-        queryFn: () => pollService.getPolls(search ? { search } : undefined),
+        queryKey: ["admin-polls", tableState.params],
+        queryFn: () => pollService.getPolls(tableState.params),
+        placeholderData: keepPreviousData,
     });
+    const pollMeta = listMeta(data);
 
     const deleteMutation = useMutation({
         mutationFn: (id: number) => pollService.deletePoll(id),
@@ -195,33 +197,19 @@ export default function PollsPage() {
             </div>
 
             {/* Poll History Table */}
-            <div className="bg-white rounded-xl border border-gray-200">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                    <h2 className="text-sm font-semibold text-gray-900">Poll History</h2>
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <Search
-                                size={14}
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                            />
-                            <Input
-                                id="poll-search"
-                                placeholder="Search"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="pl-8 h-8 w-48 text-sm"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="p-0">
-                    <DataTable
-                        columns={columns}
-                        data={polls}
-                        isLoading={isLoading}
-                    />
-                </div>
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <DataTable
+                    columns={columns}
+                    data={polls}
+                    isLoading={isLoading}
+                    searchKey="title"
+                    title="Poll History"
+                    {...tableState.tableProps}
+                    pageCount={pollMeta.pageCount}
+                    total={pollMeta.total}
+                    filterOptions={[POLL_STATUS_FILTER]}
+                    sortField="title"
+                />
             </div>
         </DashboardLayout>
     );

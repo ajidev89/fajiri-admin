@@ -5,7 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import DashboardLayout from "@/layout/dashboard";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, FileDown, Flag, Eye, Filter } from "lucide-react";
+import { MoreHorizontal, FileDown, Flag, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
     DropdownMenu,
@@ -14,15 +14,9 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { STATUS_FILTER, useServerTable } from "@/lib/use-server-table";
 import { toast } from "sonner";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { donationService } from "@/services";
 import { formatDate } from "date-fns";
 import {
@@ -213,21 +207,23 @@ const buildColumns = ({
     },
 ];
 
-type TypeFilter = "all" | "campaign" | "need";
-
 export default function DonationsPage() {
-    const [typeFilter, setTypeFilter] = React.useState<TypeFilter>("all");
+    const tableState = useServerTable({ sortBy: "created_at" });
 
     const {
         data: donationsRes,
         isLoading,
-        error,
     } = useQuery({
-        queryKey: ["donations", typeFilter],
+        queryKey: ["donations", tableState.params],
         queryFn: () =>
-            donationService.getDonations(
-                typeFilter === "all" ? undefined : { type: typeFilter },
-            ),
+            donationService.getDonations({
+                ...tableState.params,
+                status: tableState.filters.status ?? "all",
+                ...(tableState.filters.type && tableState.filters.type !== "all"
+                    ? { type: tableState.filters.type }
+                    : {}),
+            }),
+        placeholderData: keepPreviousData,
     });
 
     const donations = React.useMemo(
@@ -302,22 +298,22 @@ export default function DonationsPage() {
                     searchKey="name"
                     isLoading={isLoading}
                     title="Donation Table"
-                    filters={
-                        <Select
-                            value={typeFilter}
-                            onValueChange={(v) => setTypeFilter(v as TypeFilter)}
-                        >
-                            <SelectTrigger className="h-10 w-full sm:w-[150px] gap-2 border-[#EAECF0] text-[#344054] font-medium shadow-none [&>span]:flex-1 [&>span]:text-left">
-                                <Filter className="h-4 w-4 text-[#667085]" />
-                                <SelectValue placeholder="All types" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All types</SelectItem>
-                                <SelectItem value="campaign">Campaign</SelectItem>
-                                <SelectItem value="need">Need</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    }
+                    {...tableState.tableProps}
+                    pageCount={(donationsRes as any)?.meta?.last_page ?? 1}
+                    total={(donationsRes as any)?.meta?.total}
+                    sortField="name"
+                    filterOptions={[
+                        {
+                            key: "type",
+                            label: "Type",
+                            options: [
+                                { value: "all", label: "All types" },
+                                { value: "campaign", label: "Campaign" },
+                                { value: "need", label: "Need" },
+                            ],
+                        },
+                        STATUS_FILTER,
+                    ]}
                 />
             </div>
 

@@ -78,12 +78,10 @@ export const donationService = {
         );
     },
 
-    getDonations(params?: { type?: "campaign" | "need" }) {
-        const query: Record<string, string> = {};
-        if (params?.type) query.type = params.type;
+    getDonations(params?: Record<string, string>) {
         return apiClient.get<
             ApiResponse<DonationWithCampaign[] | DonationWithNeed[]>
-        >("/donations", query);
+        >("/donations", params);
     },
 
     getDonation(id: string) {

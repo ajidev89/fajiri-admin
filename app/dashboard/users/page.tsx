@@ -55,6 +55,7 @@ import {
 } from "@/services/admin";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { STATUS_FILTER, useServerTable } from "@/lib/use-server-table";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared Helpers
@@ -62,21 +63,15 @@ import { toast } from "sonner";
 
 const PROTECTED_SLUGS = ["super-admin", "admin", "user", "fundraiser"];
 
-function useDebouncedValue(value: string, delay = 350) {
-    const [debounced, setDebounced] = React.useState(value);
-    React.useEffect(() => {
-        const id = window.setTimeout(() => setDebounced(value), delay);
-        return () => window.clearTimeout(id);
-    }, [value, delay]);
-    return debounced;
-}
-
-function userListParams(search: string, page: number) {
-    const params: Record<string, string> = { page: String(page) };
-    const term = search.trim();
-    if (term) params.search = term;
-    return params;
-}
+const MEMBER_STATUS_FILTER = {
+    ...STATUS_FILTER,
+    options: [
+        { value: "all", label: "All statuses" },
+        { value: "active", label: "Active" },
+        { value: "suspended", label: "Suspended" },
+        { value: "deactivated", label: "Deactivated" },
+    ],
+};
 
 const statusBadge = (status: string) => (
     <div
@@ -301,19 +296,17 @@ function MemberActionCell({
 }
 
 function MembersTab({ roles }: { roles: Role[] }) {
-    const [search, setSearch] = React.useState("");
-    const [page, setPage] = React.useState(1);
-    const debouncedSearch = useDebouncedValue(search);
+    const tableState = useServerTable({ sortBy: "created_at" });
 
     const { data: usersRes, isLoading } = useQuery({
-        queryKey: ["users", debouncedSearch, page],
-        queryFn: () => usersService.getUsers(userListParams(debouncedSearch, page)),
+        queryKey: ["users", tableState.params],
+        queryFn: () => usersService.getUsers(tableState.params),
         placeholderData: keepPreviousData,
     });
 
     const users = React.useMemo(() => usersRes?.data ?? [], [usersRes]);
     const meta = usersRes?.meta;
-    const rowOffset = meta?.from ? meta.from - 1 : (page - 1) * (meta?.per_page ?? 10);
+    const rowOffset = meta?.from ? meta.from - 1 : (tableState.page - 1) * (meta?.per_page ?? 10);
 
     const columns: ColumnDef<UserWithWallet>[] = [
         {
@@ -395,18 +388,14 @@ function MembersTab({ roles }: { roles: Role[] }) {
         <DataTable
             columns={columns}
             data={users}
-            searchValue={search}
-            onSearchChange={(value) => {
-                setSearch(value);
-                setPage(1);
-            }}
+            {...tableState.tableProps}
             searchPlaceholder="Search by name, email, phone, or member ID"
             title="Members"
             isLoading={isLoading}
-            page={page}
             pageCount={meta?.last_page ?? 1}
-            onPageChange={setPage}
             total={meta?.total}
+            filterOptions={[MEMBER_STATUS_FILTER]}
+            sortField="created_at"
         />
     );
 }
@@ -826,13 +815,11 @@ function TeamMemberActionCell({
 
 function TeamMembersTab({ roles }: { roles: Role[] }) {
     const [addOpen, setAddOpen] = React.useState(false);
-    const [search, setSearch] = React.useState("");
-    const [page, setPage] = React.useState(1);
-    const debouncedSearch = useDebouncedValue(search);
+    const tableState = useServerTable({ sortBy: "created_at" });
 
     const { data: membersRes, isLoading } = useQuery({
-        queryKey: ["team-members", debouncedSearch, page],
-        queryFn: () => adminService.getTeamMembers(userListParams(debouncedSearch, page)),
+        queryKey: ["team-members", tableState.params],
+        queryFn: () => adminService.getTeamMembers(tableState.params),
         placeholderData: keepPreviousData,
     });
 
@@ -841,7 +828,7 @@ function TeamMembersTab({ roles }: { roles: Role[] }) {
         [membersRes],
     );
     const meta = membersRes?.meta;
-    const rowOffset = meta?.from ? meta.from - 1 : (page - 1) * (meta?.per_page ?? 15);
+    const rowOffset = meta?.from ? meta.from - 1 : (tableState.page - 1) * (meta?.per_page ?? 15);
 
     const columns: ColumnDef<TeamMember>[] = [
         {
@@ -925,18 +912,14 @@ function TeamMembersTab({ roles }: { roles: Role[] }) {
             <DataTable
                 columns={columns}
                 data={members}
-                searchValue={search}
-                onSearchChange={(value) => {
-                    setSearch(value);
-                    setPage(1);
-                }}
+                {...tableState.tableProps}
                 searchPlaceholder="Search by name, email, phone, or member ID"
                 title="Team Members"
                 isLoading={isLoading}
-                page={page}
                 pageCount={meta?.last_page ?? 1}
-                onPageChange={setPage}
                 total={meta?.total}
+                filterOptions={[MEMBER_STATUS_FILTER]}
+                sortField="created_at"
             />
             <AddTeamMemberDialog
                 open={addOpen}

@@ -15,7 +15,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { STATUS_FILTER, useServerTable } from "@/lib/use-server-table";
 import { needService, Need } from "@/services/needs";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,9 +30,15 @@ export default function NeedsPage() {
     const { user } = useAuthStore();
     const isFundraiser = user?.role.slug === "fundraiser";
 
+    const tableState = useServerTable({
+        sortBy: "name",
+        extra: isFundraiser && user?.id ? { added_by: user.id } : {},
+    });
+
     const { data: needsRes, isLoading } = useQuery({
-        queryKey: ["needs", isFundraiser ? user?.id : "all"],
-        queryFn: () => needService.getNeeds(isFundraiser ? { added_by: user?.id } : {}),
+        queryKey: ["needs", tableState.params, isFundraiser ? user?.id : "all"],
+        queryFn: () => needService.getNeeds(tableState.params),
+        placeholderData: keepPreviousData,
     });
 
     const deleteMutation = useMutation({
@@ -207,6 +214,11 @@ export default function NeedsPage() {
                         searchKey="name"
                         title="Needs Table"
                         isLoading={isLoading}
+                        {...tableState.tableProps}
+                        pageCount={(needsRes as any)?.meta?.last_page ?? 1}
+                        total={(needsRes as any)?.meta?.total}
+                        filterOptions={[STATUS_FILTER]}
+                        sortField="name"
                     />
                 </div>
             </div>

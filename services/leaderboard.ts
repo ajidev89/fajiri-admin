@@ -41,7 +41,14 @@ export interface LeaderboardMember {
     need_donations_count: number;
     event_attendance_count: number;
     name: string;
-    country_iso2: string;
+    country_iso?: string;
+    country_iso2?: string;
+    country?: {
+        id: number;
+        name: string;
+        iso2: string;
+        flag: string | null;
+    };
     total_engagement: number;
     profile: LeaderboardProfile;
 }

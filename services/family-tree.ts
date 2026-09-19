@@ -21,8 +21,8 @@ export interface FamilyTreeNode {
 }
 
 export const familyTreeService = {
-    getFamilyTree() {
-        return apiClient.get<ApiResponse<FamilyTreeNode[]>>("/family-tree/admin");
+    getFamilyTree(params?: Record<string, string>) {
+        return apiClient.get<ApiResponse<FamilyTreeNode[]>>("/family-tree/admin", params);
     },
     getFamilyTreeByMemberId(id: string) {
         return apiClient.get<ApiResponse<FamilyTreeNode>>(`/family-tree/admin/${id}`);

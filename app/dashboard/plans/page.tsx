@@ -16,7 +16,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { listMeta, useServerTable } from "@/lib/use-server-table";
 import { planService, Plan } from "@/services/plans";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -27,9 +28,12 @@ export default function PlansPage() {
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
     const queryClient = useQueryClient();
 
+    const tableState = useServerTable({ sortBy: "name" });
+
     const { data: plansRes, isLoading } = useQuery({
-        queryKey: ["plans"],
-        queryFn: () => planService.listPlans(),
+        queryKey: ["plans", tableState.params],
+        queryFn: () => planService.listPlans(tableState.params),
+        placeholderData: keepPreviousData,
     });
 
     const deleteMutation = useMutation({
@@ -202,6 +206,10 @@ export default function PlansPage() {
                         searchKey="name"
                         title="Plans Table"
                         isLoading={isLoading}
+                        {...tableState.tableProps}
+                        pageCount={listMeta(plansRes).pageCount}
+                        total={listMeta(plansRes).total}
+                        sortField="name"
                     />
                 </div>
             </div>
