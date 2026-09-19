@@ -48,6 +48,12 @@ const columns: ColumnDef<Campaign>[] = [
     {
         accessorKey: "type",
         header: "Category",
+        cell: ({ row }) => (
+            <span className="capitalize">
+                {row.original.category?.name ??
+                    String(row.original.type ?? "—").replace(/-/g, " ")}
+            </span>
+        ),
     },
     {
         accessorKey: "goal_amount",
