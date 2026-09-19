@@ -28,8 +28,30 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { analyticsService } from "@/services/analytics";
+import { analyticsService, DonationChartlyAnnualyResponse } from "@/services/analytics";
 import { useAuthStore } from "@/store/auth-store";
+
+function donationAmountUsd(entry: DonationChartlyAnnualyResponse) {
+    const amounts = entry?.amounts;
+    if (!amounts || typeof amounts !== "object") return 0;
+    if ("USD" in amounts) return Number(amounts.USD) || 0;
+    const first = Object.values(amounts)[0];
+    return Number(first) || 0;
+}
+
+function formatUsd(amount: number, currency = "$") {
+    const prefix = currency === "USD" ? "$" : currency;
+    return `${prefix}${Number(amount || 0).toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    })}`;
+}
+
+function formatUsdTick(value: number) {
+    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(value >= 10_000 ? 0 : 1)}k`;
+    return `$${Math.round(value).toLocaleString()}`;
+}
 
 export default function DashboardPage() {
     const { user } = useAuthStore();
@@ -86,9 +108,10 @@ export default function DashboardPage() {
         const allStats = [
             {
                 label: "Total Donations",
-                value: analytics.total_donations_amount?.[0]
-                    ? `${analytics.total_donations_amount[0].currency}${Number(analytics.total_donations_amount[0].total_amount).toLocaleString()}`
-                    : "0",
+                value: formatUsd(
+                    Number(analytics.total_donations_amount?.[0]?.total_amount ?? 0),
+                    analytics.total_donations_amount?.[0]?.currency ?? "$",
+                ),
                 trend: "0%", // Replace if backend provides change %
                 trendUp: true,
                 icon: Heart,
@@ -135,7 +158,7 @@ export default function DashboardPage() {
     const trendData = React.useMemo(() => {
         return donationChartlyAnnualy.map((d) => ({
             month: d.month.substring(0, 3), // Short month
-            raised: Object.values(d.amounts)[0] || 0, // Fallback to first currency
+            raised: donationAmountUsd(d),
             donations: d.no_of_donations || 0,
         }));
     }, [donationChartlyAnnualy]);
@@ -291,9 +314,7 @@ export default function DashboardPage() {
                                         axisLine={false}
                                         tickLine={false}
                                         tick={{ fill: "#667085", fontSize: 11 }}
-                                        tickFormatter={(value) =>
-                                            `$${(value / 1000).toFixed(0)}k`
-                                        }
+                                        tickFormatter={formatUsdTick}
                                     />
                                     <Tooltip
                                         contentStyle={{
@@ -302,6 +323,11 @@ export default function DashboardPage() {
                                             boxShadow:
                                                 "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                                         }}
+                                        formatter={(value, name) =>
+                                            name === "raised"
+                                                ? [formatUsd(Number(value ?? 0)), "Amount Raised"]
+                                                : [Number(value ?? 0).toLocaleString(), "Donations Count"]
+                                        }
                                     />
                                     <Line
                                         type="monotone"
