@@ -175,4 +175,43 @@ export const apiClient = {
         });
         return handleResponse<T>(response);
     },
+
+    async download(
+        endpoint: string,
+        params?: Record<string, string>,
+        fallbackName = "export.csv",
+    ): Promise<void> {
+        const url = new URL(`${API_BASE_URL}${endpoint}`);
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value) url.searchParams.set(key, value);
+            });
+        }
+
+        const response = await fetch(url.toString(), {
+            method: "GET",
+            headers: {
+                ...authHeaders(),
+                Accept: "text/csv",
+            },
+        });
+
+        if (!response.ok) {
+            await handleResponse(response);
+            return;
+        }
+
+        const blob = await response.blob();
+        const disposition = response.headers.get("Content-Disposition") ?? "";
+        const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^\";]+)/i);
+        const filename = decodeURIComponent(match?.[1] ?? fallbackName).replace(/"/g, "");
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+    },
 };

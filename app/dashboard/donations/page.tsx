@@ -28,6 +28,7 @@ import {
 import { DonationDetailsModal } from "@/components/dashboard/donations/donation-details-modal";
 import { FlagDonationModal } from "@/components/dashboard/donations/flag-donation-modal";
 import { downloadDonationReceipt } from "@/lib/donation-receipt";
+import { exportParams } from "@/lib/export-params";
 
 interface DonationActions {
     onView: (donation: Donation) => void;
@@ -234,6 +235,27 @@ export default function DonationsPage() {
     const queryClient = useQueryClient();
     const [viewing, setViewing] = React.useState<Donation | null>(null);
     const [flagging, setFlagging] = React.useState<Donation | null>(null);
+    const [isExporting, setIsExporting] = React.useState(false);
+
+    const handleExport = async () => {
+        try {
+            setIsExporting(true);
+            await donationService.exportDonations(
+                exportParams({
+                    ...tableState.params,
+                    status: tableState.filters.status ?? "all",
+                    ...(tableState.filters.type && tableState.filters.type !== "all"
+                        ? { type: tableState.filters.type }
+                        : {}),
+                }),
+            );
+            toast.success("Donations CSV downloaded");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to export donations");
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     const unflagMutation = useMutation({
         mutationFn: (id: string) => donationService.unflagDonation(id),
@@ -285,8 +307,10 @@ export default function DonationsPage() {
                         <Button
                             variant="outline"
                             className="border-[#EAECF0] text-[#344054] font-semibold flex items-center gap-2"
+                            onClick={handleExport}
+                            disabled={isExporting}
                         >
-                            <FileDown className="h-4 w-4" /> Export CSV
+                            <FileDown className="h-4 w-4" /> {isExporting ? "Exporting..." : "Export CSV"}
                         </Button>
                     </div>
                 </div>

@@ -1348,6 +1348,19 @@ export default function UsersPage() {
         queryFn: () => adminService.getRoles(),
     });
     const roles: Role[] = rolesRes?.data ?? [];
+    const [isExporting, setIsExporting] = React.useState(false);
+
+    const handleExport = async () => {
+        try {
+            setIsExporting(true);
+            await usersService.exportUsers();
+            toast.success("Users CSV downloaded");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to export users");
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     return (
         <DashboardLayout>
@@ -1366,8 +1379,10 @@ export default function UsersPage() {
                     <Button
                         variant="outline"
                         className="border-[#EAECF0] text-[#344054] font-semibold flex items-center gap-2"
+                        onClick={handleExport}
+                        disabled={isExporting}
                     >
-                        <FileDown className="h-4 w-4" /> Export CSV
+                        <FileDown className="h-4 w-4" /> {isExporting ? "Exporting..." : "Export CSV"}
                     </Button>
                 </div>
 

@@ -21,6 +21,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { STATUS_FILTER, useServerTable } from "@/lib/use-server-table";
 import { campaignService, Campaign } from "@/services/campaigns";
 import { useAuthStore } from "@/store/auth-store";
+import { exportParams } from "@/lib/export-params";
 import { CategoriesView } from "@/components/dashboard/campaigns/categories-view";
 
 // Columns definition
@@ -187,6 +188,24 @@ export default function CampaignsPage() {
         sortBy: "title",
         extra: isFundraiser && user?.id ? { added_by: user.id } : {},
     });
+    const [isExporting, setIsExporting] = useState(false);
+
+    const handleExport = async () => {
+        try {
+            setIsExporting(true);
+            await campaignService.exportCampaigns(
+                exportParams({
+                    ...tableState.params,
+                    status: tableState.filters.status ?? "all",
+                }),
+            );
+            toast.success("Campaigns CSV downloaded");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to export campaigns");
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     const { data: campaignsRes, isLoading } = useQuery({
         queryKey: ["campaigns", tableState.params, isFundraiser ? user?.id : "all"],
@@ -293,8 +312,10 @@ export default function CampaignsPage() {
                                 <Button
                                     variant="outline"
                                     className="border-[#EAECF0] text-[#344054] font-semibold h-11 sm:h-10 flex items-center justify-center"
+                                    onClick={handleExport}
+                                    disabled={isExporting}
                                 >
-                                    Export Data
+                                    {isExporting ? "Exporting..." : "Export Data"}
                                 </Button>
                                 <Button
                                     className="bg-[#0E3B5D] hover:bg-[#0E3B5D]/90 text-white font-semibold gap-2 h-11 sm:h-10 flex items-center justify-center"

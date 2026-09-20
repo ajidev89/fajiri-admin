@@ -84,6 +84,10 @@ export const donationService = {
         >("/donations", params);
     },
 
+    exportDonations(params?: Record<string, string>) {
+        return apiClient.download("/donations/export", params, "donations.csv");
+    },
+
     getDonation(id: string) {
         return apiClient.get<ApiResponse<AnyDonation>>(`/donations/${id}`);
     },

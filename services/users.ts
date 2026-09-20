@@ -67,6 +67,10 @@ export const usersService = {
         return apiClient.get<PaginatedResponse<UserWithWallet>>("/users", params);
     },
 
+    exportUsers(params?: Record<string, string>) {
+        return apiClient.download("/users/export", params, "users.csv");
+    },
+
     getUserById(userId: string) {
         return apiClient.get<ApiResponse<UserWithWallet>>(`/users/${userId}`);
     },

@@ -21,12 +21,26 @@ import { usersService, type UserWithWallet } from "@/services/users";
 import { FundraiserModal } from "@/components/dashboard/fundraisers/fundraiser-modal";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { exportParams } from "@/lib/export-params";
 
 export default function FundraiserPage() {
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const queryClient = useQueryClient();
 
     const tableState = useServerTable({ sortBy: "email" });
+    const [isExporting, setIsExporting] = React.useState(false);
+
+    const handleExport = async () => {
+        try {
+            setIsExporting(true);
+            await fundraiserService.exportFundraisers(exportParams(tableState.params));
+            toast.success("Fundraisers CSV downloaded");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to export fundraisers");
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     const { data: fundraisersRes, isLoading } = useQuery({
         queryKey: ["fundraisers", tableState.params],
@@ -186,8 +200,13 @@ export default function FundraiserPage() {
                         <p className="text-xs sm:text-sm text-[#475467]">Monitor and manage all fundraiser accounts and their activities.</p>
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                        <Button variant="outline" className="border-[#EAECF0] text-[#344054] font-semibold flex items-center justify-center gap-2 h-11 sm:h-10">
-                            <FileDown className="h-4 w-4" /> Export CSV
+                        <Button
+                            variant="outline"
+                            className="border-[#EAECF0] text-[#344054] font-semibold flex items-center justify-center gap-2 h-11 sm:h-10"
+                            onClick={handleExport}
+                            disabled={isExporting}
+                        >
+                            <FileDown className="h-4 w-4" /> {isExporting ? "Exporting..." : "Export CSV"}
                         </Button>
                         <Button 
                             className="bg-[#0E3B5D] hover:bg-[#0E3B5D]/90 text-white font-semibold gap-2 transition-all shadow-sm h-11 sm:h-10 flex items-center justify-center"

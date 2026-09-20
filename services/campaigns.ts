@@ -93,6 +93,10 @@ export const campaignService = {
         return apiClient.get<PaginatedResponse<Campaign>>("/campaigns", params);
     },
 
+    exportCampaigns(params?: Record<string, string>) {
+        return apiClient.download("/campaigns/export", params, "campaigns.csv");
+    },
+
     urgentCampaigns(params?: Record<string, string>) {
         return apiClient.get<PaginatedResponse<Campaign>>(
             "/campaigns/urgent",

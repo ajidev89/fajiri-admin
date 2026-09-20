@@ -15,6 +15,10 @@ export const fundraiserService = {
         return apiClient.get<ApiResponse<UserWithWallet[]>>("/fundraisers", params);
     },
 
+    exportFundraisers(params?: Record<string, string>) {
+        return apiClient.download("/fundraisers/export", params, "fundraisers.csv");
+    },
+
     createFundraiser(payload: CreateFundraiserPayload) {
         return apiClient.post<ApiResponse<UserWithWallet>>("/fundraisers", payload);
     },
