@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { CampaignStats } from "@/components/dashboard/campaigns/stats-cards";
 import { DataTable } from "@/components/ui/data-table";
 import DashboardLayout from "@/layout/dashboard";
-import { MoreHorizontal, Plus, Edit2, Eye, Trash2 } from "lucide-react";
+import { MoreHorizontal, Plus, Edit2, Eye, Trash2, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as React from "react";
 import { useState } from "react";
@@ -18,7 +18,7 @@ import {
 import { Button } from "../../../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { STATUS_FILTER, useServerTable } from "@/lib/use-server-table";
+import { CAMPAIGN_STATUS_FILTER, useServerTable } from "@/lib/use-server-table";
 import { campaignService, Campaign } from "@/services/campaigns";
 import { useAuthStore } from "@/store/auth-store";
 import { exportParams } from "@/lib/export-params";
@@ -37,9 +37,16 @@ const columns: ColumnDef<Campaign>[] = [
         accessorKey: "title",
         header: "Campaign Title",
         cell: ({ row }) => (
-            <span className="font-medium text-[#101828] max-w-[200px] block truncate">
-                {row.getValue("title")}
-            </span>
+            <div className="flex items-center gap-2 max-w-[240px]">
+                <span className="font-medium text-[#101828] truncate">
+                    {row.getValue("title")}
+                </span>
+                {row.original.is_urgent && (
+                    <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-red-50 text-red-700">
+                        Urgent
+                    </span>
+                )}
+            </div>
         ),
     },
     {
@@ -149,6 +156,20 @@ const columns: ColumnDef<Campaign>[] = [
                         >
                             <Edit2 className="h-3.5 w-3.5" /> Edit Campaign
                         </DropdownMenuItem>
+                        {campaign.status !== "completed" && (
+                            <DropdownMenuItem
+                                className="gap-2 text-xs font-medium text-emerald-700 cursor-pointer"
+                                onClick={() => {
+                                    window.dispatchEvent(
+                                        new CustomEvent("complete-campaign", {
+                                            detail: campaign,
+                                        }),
+                                    );
+                                }}
+                            >
+                                <CheckCircle2 className="h-3.5 w-3.5" /> Complete Campaign
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                             className="gap-2 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
                             onClick={() => {
@@ -217,6 +238,17 @@ export default function CampaignsPage() {
         placeholderData: keepPreviousData,
     });
 
+    const completeMutation = useMutation({
+        mutationFn: (id: string) => campaignService.completeCampaign(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+            toast.success("Campaign marked as completed");
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Failed to complete campaign");
+        },
+    });
+
     const deleteMutation = useMutation({
         mutationFn: (id: string) => campaignService.deleteCampaign(id),
         onSuccess: () => {
@@ -251,6 +283,16 @@ export default function CampaignsPage() {
         }
     };
 
+    const handleComplete = (campaign: Campaign) => {
+        if (campaign.status === "completed") {
+            return;
+        }
+
+        if (confirm(`Complete "${campaign.title}"? It will no longer accept donations.`)) {
+            completeMutation.mutate(campaign.id);
+        }
+    };
+
     const handleCreate = () => {
         setSelectedCampaign(null);
         setIsModalOpen(true);
@@ -261,17 +303,20 @@ export default function CampaignsPage() {
         const onEdit = (e: any) => handleEdit(e.detail);
         const onDisburse = (e: any) => handleDisburse(e.detail);
         const onHistory = (e: any) => handleHistory(e.detail);
+        const onComplete = (e: any) => handleComplete(e.detail);
         const onDelete = (e: any) => handleDelete(e.detail);
 
         window.addEventListener("edit-campaign", onEdit);
         window.addEventListener("disburse-campaign", onDisburse);
         window.addEventListener("history-campaign", onHistory);
+        window.addEventListener("complete-campaign", onComplete);
         window.addEventListener("delete-campaign", onDelete);
 
         return () => {
             window.removeEventListener("edit-campaign", onEdit);
             window.removeEventListener("disburse-campaign", onDisburse);
             window.removeEventListener("history-campaign", onHistory);
+            window.removeEventListener("complete-campaign", onComplete);
             window.removeEventListener("delete-campaign", onDelete);
         };
     }, []);
@@ -360,7 +405,7 @@ export default function CampaignsPage() {
                             {...tableState.tableProps}
                             pageCount={campaignsRes?.meta?.last_page ?? 1}
                             total={campaignsRes?.meta?.total}
-                            filterOptions={[STATUS_FILTER]}
+                            filterOptions={[CAMPAIGN_STATUS_FILTER]}
                             sortField="title"
                         />
                     </div>

@@ -37,6 +37,7 @@ export interface Campaign {
     campaign_type: CampaignTypeEnum;
     images: string[] | null;
     status: string;
+    is_urgent: boolean;
     end_date: string | null;
     goal_amount: number;
     goal_amount_converted?: number;
@@ -61,6 +62,7 @@ export interface CreateCampaignPayload {
     images?: File[];
     days: string;
     category_id: string;
+    is_urgent?: boolean;
 }
 
 export interface UpdateCampaignPayload {
@@ -73,6 +75,7 @@ export interface UpdateCampaignPayload {
     category_id?: string;
     days?: string;
     images?: File[];
+    is_urgent?: boolean;
 }
 
 export interface Analytics {
@@ -131,6 +134,7 @@ export const campaignService = {
         formData.append("category_id", payload.category_id);
         formData.append("status", "active");
         formData.append("campaign_type", "organization");
+        formData.append("is_urgent", payload.is_urgent ? "1" : "0");
         if (payload.images) {
             payload.images.forEach((image, index) => {
                 formData.append(`images[${index}]`, image);
@@ -149,25 +153,33 @@ export const campaignService = {
         if (payload.currency) formData.append("currency", payload.currency);
         if (payload.goal_amount)
             formData.append("goal_amount", payload.goal_amount);
-        if (payload.status) formData.append("status", payload.status);
         if (payload.campaign_type)
             formData.append("campaign_type", payload.campaign_type);
         if (payload.category_id)
             formData.append("category_id", payload.category_id);
         if (payload.days) formData.append("days", payload.days);
+        if (payload.is_urgent !== undefined) {
+            formData.append("is_urgent", payload.is_urgent ? "1" : "0");
+        }
         if (payload.images) {
             payload.images.forEach((image) => {
                 formData.append("images[]", image);
             });
         }
         formData.append("campaign_type", "organization");
-        formData.append("status", "active");
+        formData.append("status", payload.status ?? "active");
         formData.append("_method", "put");
         return apiClient.postFormData<ApiResponse<Campaign>>(
             `/campaigns/${campaignId}`,
             formData,
         );
     },
+    completeCampaign(campaignId: string) {
+        return apiClient.post<ApiResponse<Campaign>>(
+            `/campaigns/${campaignId}/complete`,
+        );
+    },
+
     deleteCampaign(campaignId: string) {
         return apiClient.delete<ApiResponse<unknown>>(`/campaigns/${campaignId}`);
     },

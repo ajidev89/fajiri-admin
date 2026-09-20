@@ -118,6 +118,16 @@ export const STATUS_FILTER: TableFilterOption = {
     ],
 };
 
+export const CAMPAIGN_STATUS_FILTER: TableFilterOption = {
+    key: "status",
+    label: "Status",
+    options: [
+        { value: "all", label: "All statuses" },
+        { value: "active", label: "Active" },
+        { value: "completed", label: "Completed" },
+    ],
+};
+
 export const POST_STATUS_FILTER: TableFilterOption = {
     key: "status",
     label: "Status",

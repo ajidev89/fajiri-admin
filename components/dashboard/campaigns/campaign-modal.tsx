@@ -23,7 +23,8 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { CurrencySelect } from "@/components/form/currency-select";
-import { CloudUpload, X } from "lucide-react";
+import { CloudUpload } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { campaignService, Campaign } from "@/services/campaigns";
@@ -42,6 +43,7 @@ const campaignSchema = z.object({
         .min(1, "Description is required")
         .max(8000, "Max 8000 words"),
     thumbnail: z.any().optional(),
+    isUrgent: z.boolean(),
 });
 
 type CampaignFormValues = z.infer<typeof campaignSchema>;
@@ -84,6 +86,7 @@ export function CampaignModal({
             currency: "USD",
             days: "",
             description: "",
+            isUrgent: false,
         },
     });
 
@@ -105,6 +108,7 @@ export function CampaignModal({
                 goal_amount: data.goalAmount,
                 category_id: data.category,
                 days: data.days,
+                is_urgent: data.isUrgent,
                 images:
                     data.thumbnail instanceof File
                         ? [data.thumbnail]
@@ -133,6 +137,7 @@ export function CampaignModal({
                 days: data.days,
                 status: initialData.status,
                 category_id: data.category,
+                is_urgent: data.isUrgent,
                 images:
                     data.thumbnail instanceof File
                         ? [data.thumbnail]
@@ -162,6 +167,7 @@ export function CampaignModal({
                 currency: initialData.currency || "USD",
                 days: dayjs(initialData.end_date).diff(dayjs(initialData.created_at), 'day').toString(),
                 description: initialData.body,
+                isUrgent: Boolean(initialData.is_urgent),
             });
         } else {
             reset({
@@ -171,6 +177,7 @@ export function CampaignModal({
                 currency: "USD",
                 days: "",
                 description: "",
+                isUrgent: false,
             });
         }
     }, [initialData, reset]);
@@ -315,6 +322,29 @@ export function CampaignModal({
                                     {errors.days.message}
                                 </p>
                             )}
+                        </div>
+                    </div>
+
+                    {/* Urgent */}
+                    <div className="flex items-start gap-3 rounded-xl border border-[#EAECF0] p-4">
+                        <Checkbox
+                            id="isUrgent"
+                            checked={watch("isUrgent")}
+                            onCheckedChange={(checked) =>
+                                setValue("isUrgent", Boolean(checked))
+                            }
+                            className="mt-0.5"
+                        />
+                        <div className="space-y-1">
+                            <Label
+                                htmlFor="isUrgent"
+                                className="text-sm font-medium text-[#344054] cursor-pointer"
+                            >
+                                Mark as urgent
+                            </Label>
+                            <p className="text-xs text-[#667085]">
+                                Urgent campaigns appear in the urgent campaigns list for members.
+                            </p>
                         </div>
                     </div>
 
