@@ -26,11 +26,7 @@ export function Navbar() {
 
     const segments = pathname.split("/").filter(Boolean);
     const userId =
-        segments.length === 3 &&
-        segments[0] === "dashboard" &&
-        segments[1] === "users"
-            ? segments[2]
-            : null;
+        segments.length === 2 && segments[0] === "users" ? segments[1] : null;
 
     const { data: userRes } = useQuery({
         queryKey: ["user", userId],

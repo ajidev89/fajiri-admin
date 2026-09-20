@@ -1,65 +1,434 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+import * as React from "react";
+import DashboardLayout from "@/layout/dashboard";
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    Legend,
+} from "recharts";
+import {
+    Heart,
+    Megaphone,
+    Users,
+    Receipt,
+    TrendingUp,
+    TrendingDown,
+    ChevronDown,
+    RotateCw,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { analyticsService, DonationChartlyAnnualyResponse } from "@/services/analytics";
+import { useAuthStore } from "@/store/auth-store";
+
+function donationAmountUsd(entry: DonationChartlyAnnualyResponse) {
+    const amounts = entry?.amounts;
+    if (!amounts || typeof amounts !== "object") return 0;
+    if ("USD" in amounts) return Number(amounts.USD) || 0;
+    const first = Object.values(amounts)[0];
+    return Number(first) || 0;
+}
+
+function formatUsd(amount: number, currency = "$") {
+    const prefix = currency === "USD" ? "$" : currency;
+    return `${prefix}${Number(amount || 0).toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    })}`;
+}
+
+function formatUsdTick(value: number) {
+    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(value >= 10_000 ? 0 : 1)}k`;
+    return `$${Math.round(value).toLocaleString()}`;
+}
+
+export default function DashboardPage() {
+    const { user } = useAuthStore();
+    const isFundraiser = user?.role?.slug === "fundraiser";
+    const filterParams = isFundraiser ? { added_by: user?.id } : {};
+
+    const {
+        data: analyticsRes,
+        isLoading,
+        error,
+    } = useQuery({
+        queryKey: ["analytics", isFundraiser ? user?.id : "all"],
+        queryFn: () => analyticsService.getAnalytics(filterParams),
+    });
+
+    const {
+        data: topPerformingCampaignsRes,
+        isLoading: topPerformingCampaignsIsLoading,
+        error: topPerformingCampaignsError,
+    } = useQuery({
+        queryKey: ["top-performing-campaigns", isFundraiser ? user?.id : "all"],
+        queryFn: () => analyticsService.getTopPerformingCampaigns(filterParams),
+    });
+
+    const { data: donationChartlyAnnualyRes } = useQuery({
+        queryKey: ["donation-chartly-annualy", isFundraiser ? user?.id : "all"],
+        queryFn: () => analyticsService.getDonationChartlyAnnualy(filterParams),
+    });
+
+    const analytics = React.useMemo(
+        () => analyticsRes?.data || null,
+        [analyticsRes],
+    );
+
+    const topPerformingCampaigns = React.useMemo(
+        () =>
+            Array.isArray(topPerformingCampaignsRes?.data)
+                ? topPerformingCampaignsRes.data
+                : [],
+        [topPerformingCampaignsRes],
+    );
+
+    const donationChartlyAnnualy = React.useMemo(
+        () =>
+            Array.isArray(donationChartlyAnnualyRes?.data)
+                ? donationChartlyAnnualyRes.data
+                : [],
+        [donationChartlyAnnualyRes],
+    );
+
+    const stats = React.useMemo(() => {
+        if (!analytics) return [];
+
+        const allStats = [
+            {
+                label: "Total Donations",
+                value: formatUsd(
+                    Number(analytics.total_donations_amount?.[0]?.total_amount ?? 0),
+                    analytics.total_donations_amount?.[0]?.currency ?? "$",
+                ),
+                trend: "0%", // Replace if backend provides change %
+                trendUp: true,
+                icon: Heart,
+                iconBg: "bg-blue-50",
+                iconColor: "text-blue-600",
+            },
+            {
+                label: "Active Campaigns",
+                value: analytics.active_campaigns?.toLocaleString() || "0",
+                trend: `${analytics.active_campaigns_percentage_change > 0 ? "+" : ""}${analytics.active_campaigns_percentage_change || 0}%`,
+                trendUp: analytics.active_campaigns_percentage_change >= 0,
+                icon: Megaphone,
+                iconBg: "bg-orange-50",
+                iconColor: "text-orange-600",
+            },
+            {
+                label: "Total Members",
+                value: analytics.total_users?.toLocaleString() || "0",
+                trend: `${analytics.total_users_percentage_change > 0 ? "+" : ""}${analytics.total_users_percentage_change || 0}%`,
+                trendUp: analytics.total_users_percentage_change >= 0,
+                icon: Users,
+                iconBg: "bg-blue-50",
+                iconColor: "text-blue-600",
+            },
+            {
+                label: "Active Needs",
+                value: analytics.active_needs?.toLocaleString() || "0",
+                trend: `${analytics.active_needs_percentage_change > 0 ? "+" : ""}${analytics.active_needs_percentage_change || 0}%`,
+                trendUp: analytics.active_needs_percentage_change >= 0,
+                icon: Receipt,
+                iconBg: "bg-blue-50",
+                iconColor: "text-blue-600",
+            },
+        ];
+
+        // Remove "Total Members" for fundraisers
+        if (isFundraiser) {
+            return allStats.filter((s) => s.label !== "Total Members");
+        }
+
+        return allStats;
+    }, [analytics, isFundraiser]);
+
+    const trendData = React.useMemo(() => {
+        return donationChartlyAnnualy.map((d) => ({
+            month: d.month.substring(0, 3), // Short month
+            raised: donationAmountUsd(d),
+            donations: d.no_of_donations || 0,
+        }));
+    }, [donationChartlyAnnualy]);
+
+    const campaignColors = [
+        "#0E3B5D",
+        "#1D4ED8",
+        "#60A5FA",
+        "#93C5FD",
+        "#BFDBFE",
+    ];
+    const campaignData = React.useMemo(() => {
+        return topPerformingCampaigns.slice(0, 5).map((c, i) => ({
+            name: c.title,
+            value: Number(c.total_raised),
+            color: campaignColors[i % campaignColors.length],
+        }));
+    }, [topPerformingCampaigns]);
+
+    const totalCampaignRaised = React.useMemo(() => {
+        return campaignData.reduce((acc, curr) => acc + curr.value, 0);
+    }, [campaignData]);
+
+    return (
+        <DashboardLayout>
+            <div className="space-y-8 pb-10">
+                {/* Header Section */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-bold text-[#101828]">
+                            Dashboard
+                        </h2>
+                        <p className="text-sm text-[#475467]">
+                            Overview of platform activities.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Stats Cards Grid */}
+                <div
+                    className={cn(
+                        "grid grid-cols-1 md:grid-cols-2 gap-6",
+                        isFundraiser ? "lg:grid-cols-3" : "lg:grid-cols-4",
+                    )}
+                >
+                    {stats.map((stat, index) => (
+                        <div
+                            key={index}
+                            className="bg-white p-6 rounded-2xl border border-[#EAECF0] shadow-sm space-y-4"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div
+                                    className={cn(
+                                        "p-2.5 rounded-xl",
+                                        stat.iconBg,
+                                    )}
+                                >
+                                    <stat.icon
+                                        className={cn(
+                                            "h-5 w-5",
+                                            stat.iconColor,
+                                        )}
+                                    />
+                                </div>
+                                <span className="text-xs font-semibold text-[#667085]">
+                                    {stat.label}
+                                </span>
+                            </div>
+                            <div className="flex items-end justify-between">
+                                <h3 className="text-xl font-bold text-[#101828]">
+                                    {stat.value}
+                                </h3>
+                                <div
+                                    className={cn(
+                                        "flex items-center gap-1 text-xs font-bold",
+                                        stat.trendUp
+                                            ? "text-green-600"
+                                            : "text-red-600",
+                                    )}
+                                >
+                                    {stat.trendUp ? (
+                                        <TrendingUp className="h-3 w-3" />
+                                    ) : (
+                                        <TrendingDown className="h-3 w-3" />
+                                    )}
+                                    <span>{stat.trend}</span>
+                                    <span className="text-[#667085] font-normal ml-0.5">
+                                        from last month
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Charts Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8">
+                    {/* Trend Chart Card */}
+                    <div className="bg-white p-6 rounded-3xl border border-[#EAECF0] shadow-sm space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h4 className="font-bold text-[#101828]">
+                                Monthly Donations Trend
+                            </h4>
+                            <div className="flex items-center gap-3">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 border-[#EAECF0] text-[#344054] text-xs font-semibold gap-2"
+                                >
+                                    Monthly <ChevronDown className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8 border-[#EAECF0] text-[#667085]"
+                                >
+                                    <RotateCw className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-6 text-xs mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-[#0E3B5D]" />
+                                <span className="text-[#475467] font-medium text-[11px]">
+                                    Amount Raised
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-[#F04438]" />
+                                <span className="text-[#475467] font-medium text-[11px]">
+                                    Donations Count
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="h-[350px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={trendData}>
+                                    <CartesianGrid
+                                        strokeDasharray="3 3"
+                                        vertical={false}
+                                        stroke="#F2F4F7"
+                                    />
+                                    <XAxis
+                                        dataKey="month"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: "#667085", fontSize: 11 }}
+                                        dy={10}
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: "#667085", fontSize: 11 }}
+                                        tickFormatter={formatUsdTick}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{
+                                            borderRadius: "12px",
+                                            border: "1px solid #EAECF0",
+                                            boxShadow:
+                                                "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                                        }}
+                                        formatter={(value, name) =>
+                                            name === "raised"
+                                                ? [formatUsd(Number(value ?? 0)), "Amount Raised"]
+                                                : [Number(value ?? 0).toLocaleString(), "Donations Count"]
+                                        }
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="raised"
+                                        stroke="#0E3B5D"
+                                        strokeWidth={2}
+                                        dot={false}
+                                        activeDot={{
+                                            r: 4,
+                                            strokeWidth: 0,
+                                            fill: "#0E3B5D",
+                                        }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="donations"
+                                        stroke="#F04438"
+                                        strokeWidth={2}
+                                        dot={false}
+                                        activeDot={{
+                                            r: 4,
+                                            strokeWidth: 0,
+                                            fill: "#F04438",
+                                        }}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Donut Chart Card */}
+                    <div className="bg-white p-6 rounded-3xl border border-[#EAECF0] shadow-sm space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h4 className="font-bold text-[#101828]">
+                                Top Performing Campaigns
+                            </h4>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 border-[#EAECF0] text-[#667085]"
+                            >
+                                <RotateCw className="h-3 w-3" />
+                            </Button>
+                        </div>
+
+                        <div className="h-[400px] flex flex-col items-center justify-center gap-8">
+                            <div className="relative h-64 w-64">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={campaignData}
+                                            innerRadius={75}
+                                            outerRadius={100}
+                                            paddingAngle={0}
+                                            dataKey="value"
+                                        >
+                                            {campaignData.map(
+                                                (entry, index) => (
+                                                    <Cell
+                                                        key={`cell-${index}`}
+                                                        fill={entry.color}
+                                                    />
+                                                ),
+                                            )}
+                                        </Pie>
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-xl font-bold text-[#101828]">
+                                        ${totalCampaignRaised.toLocaleString()}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="w-full space-y-4">
+                                {campaignData.map((item, index) => (
+                                    <div
+                                        key={index}
+                                        className="flex items-center justify-between"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div
+                                                className="h-2 w-2 rounded-full"
+                                                style={{
+                                                    backgroundColor: item.color,
+                                                }}
+                                            />
+                                            <span className="text-sm font-medium text-[#475467] truncate max-w-[180px]">
+                                                {item.name}
+                                            </span>
+                                        </div>
+                                        <span className="text-sm font-bold text-[#101828]">
+                                            ${item.value.toLocaleString()}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </DashboardLayout>
+    );
 }

@@ -127,7 +127,7 @@ export function OTPVerificationForm() {
                         expires: 1,
                     });
                     toast.success("Verification successful");
-                    router.push("/dashboard");
+                    router.push("/");
                 }
             }
         },

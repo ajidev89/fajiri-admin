@@ -13,6 +13,7 @@ export interface BlogPost {
     is_featured: boolean;
     published_at: string | null;
     created_at: string;
+    tags?: string[];
     category?: Category;
     author?: {
         id: string;
@@ -33,6 +34,8 @@ export interface CreatePostPayload {
     status?: string;
     is_featured?: boolean;
     country_id?: string;
+    published_at?: string;
+    tags?: string[];
 }
 
 export const blogService = {
@@ -52,9 +55,11 @@ export const blogService = {
         if (payload.image) formData.append("image", payload.image);
         if (payload.status) formData.append("status", payload.status);
         if (payload.country_id) formData.append("country_id", payload.country_id);
+        if (payload.published_at) formData.append("published_at", payload.published_at);
         if (payload.is_featured !== undefined) {
             formData.append("is_featured", payload.is_featured ? "1" : "0");
         }
+        payload.tags?.forEach((tag) => formData.append("tags[]", tag));
         
         return apiClient.postFormData<ApiResponse<BlogPost>>("/posts", formData);
     },
@@ -66,9 +71,11 @@ export const blogService = {
         if (payload.content) formData.append("content", payload.content);
         if (payload.image) formData.append("image", payload.image);
         if (payload.status) formData.append("status", payload.status);
+        if (payload.published_at) formData.append("published_at", payload.published_at);
         if (payload.is_featured !== undefined) {
             formData.append("is_featured", payload.is_featured ? "1" : "0");
         }
+        payload.tags?.forEach((tag) => formData.append("tags[]", tag));
         formData.append("_method", "PUT");
 
         return apiClient.postFormData<ApiResponse<BlogPost>>(`/posts/${id}`, formData);

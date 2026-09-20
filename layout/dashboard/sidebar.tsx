@@ -31,22 +31,22 @@ import { useAuthStore } from "@/store/auth-store";
 import Image from "next/image";
 
 const sidebarItems = [
-    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { label: "Campaigns", icon: Megaphone, href: "/dashboard/campaigns" },
-    { label: "Needs", icon: HeartHandshake, href: "/dashboard/needs" },
-    { label: "Plans", icon: CreditCard, href: "/dashboard/plans" },
-    { label: "Donations", icon: Heart, href: "/dashboard/donations" },
-    { label: "Users", icon: Users, href: "/dashboard/users" },
-    { label: "Fundraiser", icon: UserSquare, href: "/dashboard/fundraiser" },
-    { label: "Content Management", icon: FileText, href: "/dashboard/content" },
-    { label: "Leaderboard", icon: Trophy, href: "/dashboard/leaderboard" },
-    { label: "Family Tree", icon: Network, href: "/dashboard/family-tree" },
-    { label: "Announcements", icon: Bell, href: "/dashboard/announcements" },
-    { label: "Disbursements", icon: Receipt, href: "/dashboard/disbursements" },
+    { label: "Dashboard", icon: LayoutDashboard, href: "/" },
+    { label: "Campaigns", icon: Megaphone, href: "/campaigns" },
+    { label: "Needs", icon: HeartHandshake, href: "/needs" },
+    { label: "Plans", icon: CreditCard, href: "/plans" },
+    { label: "Donations", icon: Heart, href: "/donations" },
+    { label: "Users", icon: Users, href: "/users" },
+    { label: "Fundraiser", icon: UserSquare, href: "/fundraiser" },
+    { label: "Content Management", icon: FileText, href: "/content" },
+    { label: "Leaderboard", icon: Trophy, href: "/leaderboard" },
+    { label: "Family Tree", icon: Network, href: "/family-tree" },
+    { label: "Announcements", icon: Bell, href: "/announcements" },
+    { label: "Disbursements", icon: Receipt, href: "/disbursements" },
 ];
 
 const bottomSidebarItems = [
-    { label: "Settings", icon: Settings, href: "/dashboard/settings" },
+    { label: "Settings", icon: Settings, href: "/settings" },
     {
         label: "Help & Support",
         icon: HelpCircle,
@@ -164,7 +164,7 @@ export function Sidebar() {
                 {filteredSidebarItems.map((item) => {
                     const isActive =
                         pathname === item.href ||
-                        (item.href !== "/dashboard" &&
+                        (item.href !== "/" &&
                             pathname.startsWith(item.href));
                     return (
                         <Link

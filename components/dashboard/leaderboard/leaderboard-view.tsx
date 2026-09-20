@@ -80,7 +80,7 @@ export function LeaderboardView() {
 
                 return (
                     <Link
-                        href={`/dashboard/users/${member.id}`}
+                        href={`/users/${member.id}`}
                         className="flex items-center gap-3 group hover:opacity-80 transition-opacity"
                     >
                         <div className="relative h-10 w-10 shrink-0">
