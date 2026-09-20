@@ -44,6 +44,8 @@ export interface Disbursement {
     disbursable: {
         id: string;
         title: string;
+        name?: string;
+        type?: "campaign" | "need" | string;
         currency?: string;
         [key: string]: any;
     } | null;
@@ -96,6 +98,8 @@ export interface Disbursement {
     updated_at: string;
 }
 
+export type DisbursableKind = "campaign" | "need";
+
 export interface CampaignFinancials {
     total_raised: number;
     platform_fees: number;
@@ -105,6 +109,10 @@ export interface CampaignFinancials {
     available_balance: number;
     disbursements_count: number;
     currency: string;
+    source_type?: DisbursableKind;
+    source_title?: string;
+    campaign_id?: string | null;
+    need_id?: string | null;
 }
 
 export interface FeeCalculation {
@@ -130,7 +138,9 @@ export interface ComplianceEvaluation {
 
 export interface SubmitDisbursementPayload {
     campaign_id?: string;
+    need_id?: string;
     disbursable_id?: string;
+    disbursable_type?: DisbursableKind | string;
     recipient_type?: string;
     beneficiary_name: string;
     recipient_country?: string;
@@ -155,6 +165,10 @@ export interface SubmitDisbursementPayload {
     password?: string;
 }
 
+function disbursableBase(kind: DisbursableKind, id: string) {
+    return kind === "need" ? `/needs/${id}/disbursements` : `/campaigns/${id}/disbursements`;
+}
+
 export const disbursementService = {
     // List all disbursements (General)
     listDisbursements(params?: Record<string, string>) {
@@ -166,30 +180,42 @@ export const disbursementService = {
         return apiClient.get<ApiResponse<Disbursement>>(`/disbursements/${id}`);
     },
 
-    // Campaign Financials & Modal Operations
-    getCampaignFinancials(campaignId: string) {
-        return apiClient.get<ApiResponse<CampaignFinancials>>(`/campaigns/${campaignId}/disbursements/financials`);
+    getFinancials(kind: DisbursableKind, id: string) {
+        return apiClient.get<ApiResponse<CampaignFinancials>>(`${disbursableBase(kind, id)}/financials`);
     },
 
-    validateDisbursement(campaignId: string, payload: Partial<SubmitDisbursementPayload>) {
+    // Campaign Financials & Modal Operations
+    getCampaignFinancials(campaignId: string) {
+        return this.getFinancials("campaign", campaignId);
+    },
+
+    validateDisbursement(kind: DisbursableKind, id: string, payload: Partial<SubmitDisbursementPayload>) {
         return apiClient.post<ApiResponse<{ compliance: ComplianceEvaluation; fee_calculation: FeeCalculation }>>(
-            `/campaigns/${campaignId}/disbursements/validate`,
+            `${disbursableBase(kind, id)}/validate`,
             payload
         );
     },
 
-    sendOtp(campaignId: string) {
+    sendOtp(kind: DisbursableKind, id: string) {
         return apiClient.post<ApiResponse<{ email_masked: string; expires_in: number }>>(
-            `/campaigns/${campaignId}/disbursements/send-otp`
+            `${disbursableBase(kind, id)}/send-otp`
         );
     },
 
+    getDisbursements(kind: DisbursableKind, id: string) {
+        return apiClient.get<ApiResponse<Disbursement[]>>(disbursableBase(kind, id));
+    },
+
     getCampaignDisbursements(campaignId: string) {
-        return apiClient.get<ApiResponse<Disbursement[]>>(`/campaigns/${campaignId}/disbursements`);
+        return this.getDisbursements("campaign", campaignId);
+    },
+
+    submitDisbursement(kind: DisbursableKind, id: string, payload: SubmitDisbursementPayload) {
+        return apiClient.post<ApiResponse<Disbursement>>(disbursableBase(kind, id), payload);
     },
 
     submitCampaignDisbursement(campaignId: string, payload: SubmitDisbursementPayload) {
-        return apiClient.post<ApiResponse<Disbursement>>(`/campaigns/${campaignId}/disbursements`, payload);
+        return this.submitDisbursement("campaign", campaignId, payload);
     },
 
     // Admin Review Queue & Processing

@@ -67,22 +67,18 @@ const columns: ColumnDef<Campaign>[] = [
     {
         accessorKey: "goal_amount",
         header: "Goal Amount",
-        cell: ({ row }) => (
-            <span>
-                {row.original.currency}
-                {Number(row.getValue("goal_amount")).toLocaleString()}
-            </span>
-        ),
-    },
-    {
-        accessorKey: "collected_amount",
-        header: "Raised Amount",
-        cell: ({ row }) => (
-            <span>
-                {row.original.currency}
-                {Number(row.getValue("collected_amount")).toLocaleString()}
-            </span>
-        ),
+        cell: ({ row }) => {
+            const currency = row.original.currency ?? "";
+            const donated = Number(row.original.collected_amount || 0);
+            const goal = Number(row.original.goal_amount || 0);
+            return (
+                <span>
+                    {currency}
+                    {donated.toLocaleString()} / {currency}
+                    {goal.toLocaleString()}
+                </span>
+            );
+        },
     },
     {
         accessorKey: "status",

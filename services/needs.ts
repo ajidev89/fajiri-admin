@@ -7,7 +7,8 @@ export interface Need {
   description: string;
   urgency: string;
   location: string;
-  amount: number | null;
+    amount: number | null;
+    collected_amount?: number | null;
   currency: string | null;
   base_amount?: number | null;
   base_currency?: string | null;

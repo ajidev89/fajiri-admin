@@ -49,20 +49,23 @@ import {
     disbursementService, 
     CampaignFinancials, 
     ComplianceEvaluation, 
-    FeeCalculation 
+    FeeCalculation,
+    DisbursableKind,
 } from "@/services/disbursements";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { campaignService } from "@/services/campaigns";
+import { needService } from "@/services/needs";
 
 interface DisbursementModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     campaignId?: string;
+    needId?: string;
 }
 
 const RECIPIENT_TYPES = [
-    { value: "campaign_owner", label: "Campaign Owner", desc: "Disburse directly to the campaign creator" },
+    { value: "campaign_owner", label: "Source Owner", desc: "Disburse directly to the campaign or need creator" },
     { value: "individual_beneficiary", label: "Individual Beneficiary", desc: "Third-party patient, student, or individual in need" },
     { value: "organization", label: "Organization / NGO", desc: "Registered charity, hospital, or educational institution" },
     { value: "vendor_service_provider", label: "Vendor / Service Provider", desc: "Direct payment for medical supplies, equipment, or services" },
@@ -93,14 +96,17 @@ export function DisbursementModal({
     isOpen,
     onOpenChange,
     campaignId: propCampaignId,
+    needId: propNeedId,
 }: DisbursementModalProps) {
     const queryClient = useQueryClient();
 
     // Active Step (1 to 9)
     const [step, setStep] = React.useState(1);
 
-    // Selected Campaign
+    const lockedKind: DisbursableKind | null = propNeedId ? "need" : propCampaignId ? "campaign" : null;
+    const [kind, setKind] = React.useState<DisbursableKind>(lockedKind || "campaign");
     const [selectedCampaignId, setSelectedCampaignId] = React.useState<string>(propCampaignId || "");
+    const [selectedNeedId, setSelectedNeedId] = React.useState<string>(propNeedId || "");
 
     // Form Data
     const [formData, setFormData] = React.useState({
@@ -137,21 +143,29 @@ export function DisbursementModal({
     const [maskedEmail, setMaskedEmail] = React.useState("");
     const [copied, setCopied] = React.useState(false);
 
-    // Query campaigns list if not pre-provided
+    // Query campaigns/needs if not pre-provided
     const { data: campaignsRes } = useQuery({
         queryKey: ["active-campaigns-list"],
-        queryFn: () => campaignService.listCampaigns({ status: "active" }),
-        enabled: isOpen && !propCampaignId,
+        queryFn: () => campaignService.listCampaigns({ status: "active", per_page: "100" }),
+        enabled: isOpen && kind === "campaign" && !propCampaignId,
+    });
+
+    const { data: needsRes } = useQuery({
+        queryKey: ["needs-disburse-list"],
+        queryFn: () => needService.getNeeds({ per_page: "100" }),
+        enabled: isOpen && kind === "need" && !propNeedId,
     });
 
     const campaigns = campaignsRes?.data || [];
-    const activeCampaignId = propCampaignId || selectedCampaignId || (campaigns[0]?.id as string) || "";
+    const needs = needsRes?.data || [];
+    const activeDisbursableId = kind === "need"
+        ? (propNeedId || selectedNeedId || (needs[0]?.id as string) || "")
+        : (propCampaignId || selectedCampaignId || (campaigns[0]?.id as string) || "");
 
-    // Query campaign financials
     const { data: financialsRes, isLoading: isLoadingFinancials } = useQuery({
-        queryKey: ["campaign-financials", activeCampaignId],
-        queryFn: () => disbursementService.getCampaignFinancials(activeCampaignId),
-        enabled: isOpen && !!activeCampaignId,
+        queryKey: ["disbursable-financials", kind, activeDisbursableId],
+        queryFn: () => disbursementService.getFinancials(kind, activeDisbursableId),
+        enabled: isOpen && !!activeDisbursableId,
     });
 
     const financials: CampaignFinancials | undefined = financialsRes?.data;
@@ -163,9 +177,15 @@ export function DisbursementModal({
             setSubmittedDisbursement(null);
             setComplianceResult(null);
             setFeeCalculation(null);
-            if (propCampaignId) setSelectedCampaignId(propCampaignId);
+            if (propNeedId) {
+                setKind("need");
+                setSelectedNeedId(propNeedId);
+            } else if (propCampaignId) {
+                setKind("campaign");
+                setSelectedCampaignId(propCampaignId);
+            }
         }
-    }, [isOpen, propCampaignId]);
+    }, [isOpen, propCampaignId, propNeedId]);
 
     // Timer for OTP countdown
     React.useEffect(() => {
@@ -183,7 +203,7 @@ export function DisbursementModal({
     // Step 6: Validate Compliance
     const validateMutation = useMutation({
         mutationFn: async () => {
-            const res = await disbursementService.validateDisbursement(activeCampaignId, {
+            const res = await disbursementService.validateDisbursement(kind, activeDisbursableId, {
                 ...formData,
                 amount: Number(formData.amount),
             });
@@ -202,7 +222,7 @@ export function DisbursementModal({
     // Step 8: Send OTP
     const sendOtpMutation = useMutation({
         mutationFn: async () => {
-            const res = await disbursementService.sendOtp(activeCampaignId);
+            const res = await disbursementService.sendOtp(kind, activeDisbursableId);
             return res.data;
         },
         onSuccess: (data) => {
@@ -218,16 +238,17 @@ export function DisbursementModal({
     // Step 9: Final Submission
     const submitMutation = useMutation({
         mutationFn: async () => {
-            const res = await disbursementService.submitCampaignDisbursement(activeCampaignId, {
+            const res = await disbursementService.submitDisbursement(kind, activeDisbursableId, {
                 ...formData,
                 amount: Number(formData.amount),
+                disbursable_type: kind,
             });
             return res.data;
         },
         onSuccess: (data) => {
             setSubmittedDisbursement(data);
-            queryClient.invalidateQueries({ queryKey: ["campaign-financials", activeCampaignId] });
-            queryClient.invalidateQueries({ queryKey: ["campaign-disbursements", activeCampaignId] });
+            queryClient.invalidateQueries({ queryKey: ["disbursable-financials", kind, activeDisbursableId] });
+            queryClient.invalidateQueries({ queryKey: ["disbursable-history", kind, activeDisbursableId] });
             queryClient.invalidateQueries({ queryKey: ["disbursements"] });
             setStep(9);
             toast.success("Disbursement request successfully processed");
@@ -240,6 +261,10 @@ export function DisbursementModal({
     // Navigation handlers
     const handleNext = () => {
         if (step === 1) {
+            if (!activeDisbursableId) {
+                toast.error(kind === "need" ? "Please select a need" : "Please select a campaign");
+                return;
+            }
             if (!formData.beneficiary_name.trim()) {
                 toast.error("Please enter the beneficiary name");
                 return;
@@ -328,7 +353,7 @@ export function DisbursementModal({
                             {step === 9 && "Disbursement Executed"}
                         </h2>
                         <p className="text-xs text-slate-300 mt-1">
-                            {step === 1 && "Select beneficiary type and provide verified identity details."}
+                            {step === 1 && "Choose a campaign or need, then provide verified identity details."}
                             {step === 2 && "Choose country-adaptive bank clearing, SEPA, ACH, or mobile wallet."}
                             {step === 3 && "Configure disbursement amount, currency, and fee bearer."}
                             {step === 4 && "Provide charitable justification and audit classification."}
@@ -356,11 +381,37 @@ export function DisbursementModal({
                     {/* STEP 1: RECIPIENT */}
                     {step === 1 && (
                         <div className="space-y-4">
-                            {!propCampaignId && (
+                            {!lockedKind && (
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-bold text-slate-700">Disburse From</Label>
+                                    <div className="grid grid-cols-2 gap-2.5">
+                                        {([
+                                            { value: "campaign" as const, label: "Campaign" },
+                                            { value: "need" as const, label: "Need" },
+                                        ]).map((option) => (
+                                            <button
+                                                key={option.value}
+                                                type="button"
+                                                onClick={() => setKind(option.value)}
+                                                className={cn(
+                                                    "h-11 rounded-xl border text-sm font-bold transition-all",
+                                                    kind === option.value
+                                                        ? "border-blue-600 bg-blue-50/50 text-blue-900 shadow-sm"
+                                                        : "border-slate-200 text-slate-600 bg-white hover:border-slate-300"
+                                                )}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {!lockedKind && kind === "campaign" && (
                                 <div className="space-y-1.5">
                                     <Label className="text-xs font-bold text-slate-700">Select Campaign</Label>
                                     <Select 
-                                        value={activeCampaignId} 
+                                        value={activeDisbursableId} 
                                         onValueChange={(val) => setSelectedCampaignId(val)}
                                     >
                                         <SelectTrigger className="h-11 rounded-xl border-[#EAECF0]">
@@ -377,10 +428,40 @@ export function DisbursementModal({
                                 </div>
                             )}
 
+                            {!lockedKind && kind === "need" && (
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-bold text-slate-700">Select Need</Label>
+                                    <Select 
+                                        value={activeDisbursableId} 
+                                        onValueChange={(val) => setSelectedNeedId(val)}
+                                    >
+                                        <SelectTrigger className="h-11 rounded-xl border-[#EAECF0]">
+                                            <SelectValue placeholder="Choose a need" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {needs.map((n) => (
+                                                <SelectItem key={n.id} value={n.id}>
+                                                    {n.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
                             <div className="space-y-2">
                                 <Label className="text-xs font-bold text-slate-700">Recipient Classification</Label>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                    {RECIPIENT_TYPES.map((rt) => (
+                                    {RECIPIENT_TYPES.map((rt) => {
+                                        const label = rt.value === "campaign_owner"
+                                            ? (kind === "need" ? "Need Creator" : "Campaign Owner")
+                                            : rt.label;
+                                        const desc = rt.value === "campaign_owner"
+                                            ? (kind === "need"
+                                                ? "Disburse directly to the need creator"
+                                                : "Disburse directly to the campaign creator")
+                                            : rt.desc;
+                                        return (
                                         <div
                                             key={rt.value}
                                             onClick={() => handleInputChange("recipient_type", rt.value)}
@@ -391,10 +472,11 @@ export function DisbursementModal({
                                                     : "border-slate-200 hover:border-slate-300 bg-white"
                                             )}
                                         >
-                                            <span className="text-xs font-bold text-slate-900">{rt.label}</span>
-                                            <span className="text-[11px] text-slate-500 mt-1">{rt.desc}</span>
+                                            <span className="text-xs font-bold text-slate-900">{label}</span>
+                                            <span className="text-[11px] text-slate-500 mt-1">{desc}</span>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -592,7 +674,7 @@ export function DisbursementModal({
                                                 : "border-slate-200 text-slate-600 bg-white"
                                         )}
                                     >
-                                        <span className="text-xs">Campaign Bears Fee</span>
+                                        <span className="text-xs">{kind === "need" ? "Need Bears Fee" : "Campaign Bears Fee"}</span>
                                         <p className="text-[10px] text-slate-400 mt-0.5">Recipient receives full requested amount</p>
                                     </div>
                                     <div

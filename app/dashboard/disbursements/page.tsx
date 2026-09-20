@@ -91,9 +91,11 @@ export default function DisbursementsPage() {
             cell: ({ row }) => (
                 <div className="flex flex-col max-w-[220px]">
                     <span className="font-semibold text-[#101828] truncate text-xs">
-                        {row.original.disbursable?.title || row.original.disbursable?.name || "Campaign Treasury"}
+                        {row.original.disbursable?.title || row.original.disbursable?.name || "Treasury"}
                     </span>
                     <span className="text-[10px] text-[#667085] capitalize">
+                        {row.original.disbursable?.type || (row.original.disbursable_type?.toLowerCase().includes("need") ? "need" : "campaign")}
+                        {" · "}
                         {row.original.recipient_type?.replace(/_/g, " ") || "Beneficiary"}
                     </span>
                 </div>
@@ -258,7 +260,7 @@ export default function DisbursementsPage() {
                 {/* Header Section */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2 sm:mt-0">
                     <div className="space-y-1">
-                        <h2 className="text-xl sm:text-2xl font-bold text-[#101828]">Campaign Disbursements & Payouts</h2>
+                        <h2 className="text-xl sm:text-2xl font-bold text-[#101828]">Disbursements & Payouts</h2>
                         <p className="text-xs sm:text-sm text-[#475467]">
                             Modal-driven treasury controls, automated AML/sanctions compliance, and multi-rail disbursements.
                         </p>

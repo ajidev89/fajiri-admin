@@ -19,7 +19,7 @@ import {
     ShieldAlert
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Disbursement, disbursementService } from "@/services/disbursements";
+import { Disbursement, disbursementService, DisbursableKind } from "@/services/disbursements";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface DisbursementHistoryModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
-    campaignId: string;
+    campaignId?: string;
+    needId?: string;
+    title?: string;
     campaignTitle?: string;
 }
 
@@ -37,16 +39,21 @@ export function DisbursementHistoryModal({
     isOpen,
     onOpenChange,
     campaignId,
+    needId,
+    title,
     campaignTitle,
 }: DisbursementHistoryModalProps) {
     const [search, setSearch] = React.useState("");
     const [selectedDisbursement, setSelectedDisbursement] = React.useState<Disbursement | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = React.useState(false);
+    const kind: DisbursableKind = needId ? "need" : "campaign";
+    const disbursableId = needId || campaignId || "";
+    const heading = title || campaignTitle || (kind === "need" ? "Need Treasury Activity" : "Campaign Treasury Activity");
 
     const { data: disbursementsRes, isLoading } = useQuery({
-        queryKey: ["campaign-disbursements", campaignId],
-        queryFn: () => disbursementService.getCampaignDisbursements(campaignId),
-        enabled: isOpen && !!campaignId,
+        queryKey: ["disbursable-history", kind, disbursableId],
+        queryFn: () => disbursementService.getDisbursements(kind, disbursableId),
+        enabled: isOpen && !!disbursableId,
     });
 
     const disbursements: Disbursement[] = Array.isArray(disbursementsRes?.data)
@@ -80,7 +87,7 @@ export function DisbursementHistoryModal({
                             Financial Activity & Disbursements
                         </div>
                         <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
-                            {campaignTitle || "Campaign Treasury Activity"}
+                            {heading}
                         </h2>
                         <p className="text-xs text-slate-300">
                             Complete ledger of requested, pending, and completed payout transactions.
@@ -115,7 +122,7 @@ export function DisbursementHistoryModal({
                                 </div>
                                 <h4 className="text-sm font-bold text-slate-900">No Disbursements Found</h4>
                                 <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-                                    No disbursement requests match your criteria or none have been submitted for this campaign yet.
+                                    No disbursement requests match your criteria or none have been submitted for this {kind} yet.
                                 </p>
                             </div>
                         ) : (

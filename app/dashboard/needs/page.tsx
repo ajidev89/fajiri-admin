@@ -3,11 +3,13 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import DashboardLayout from "@/layout/dashboard";
-import { MoreHorizontal, Plus, Edit2, Trash2 } from "lucide-react";
+import { MoreHorizontal, Plus, Edit2, Trash2, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as React from "react";
 import { useState } from "react";
 import { NeedModal } from "@/components/dashboard/needs/need-modal";
+import { DisbursementModal } from "@/components/dashboard/disbursements/disbursement-modal";
+import { DisbursementHistoryModal } from "@/components/dashboard/disbursements/disbursement-history-modal";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -25,7 +27,10 @@ import { useAuthStore } from "@/store/auth-store";
 
 export default function NeedsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isDisburseModalOpen, setIsDisburseModalOpen] = useState(false);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [selectedNeed, setSelectedNeed] = useState<Need | null>(null);
+    const [activeDisbursementNeed, setActiveDisbursementNeed] = useState<Need | null>(null);
     const queryClient = useQueryClient();
     const { user } = useAuthStore();
     const isFundraiser = user?.role.slug === "fundraiser";
@@ -68,6 +73,16 @@ export default function NeedsPage() {
         if (confirm("Are you sure you want to delete this need?")) {
             deleteMutation.mutate(id);
         }
+    };
+
+    const handleDisburse = (need: Need) => {
+        setActiveDisbursementNeed(need);
+        setIsDisburseModalOpen(true);
+    };
+
+    const handleHistory = (need: Need) => {
+        setActiveDisbursementNeed(need);
+        setIsHistoryModalOpen(true);
     };
 
     const columns: ColumnDef<Need>[] = [
@@ -116,11 +131,16 @@ export default function NeedsPage() {
         {
             accessorKey: "amount",
             header: "Goal Amount",
-            cell: ({ row }) => (
-                <span className="font-semibold text-[#101828]">
-                    {row.original.currency} {Number(row.getValue("amount") || 0).toLocaleString()}
-                </span>
-            ),
+            cell: ({ row }) => {
+                const currency = row.original.currency || "";
+                const donated = Number(row.original.collected_amount || 0);
+                const goal = Number(row.original.amount || 0);
+                return (
+                    <span className="font-semibold text-[#101828]">
+                        {currency} {donated.toLocaleString()} / {goal.toLocaleString()}
+                    </span>
+                );
+            },
         },
         {
             accessorKey: "location",
@@ -157,7 +177,19 @@ export default function NeedsPage() {
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[160px] bg-white">
+                        <DropdownMenuContent align="end" className="w-[190px] bg-white">
+                            <DropdownMenuItem 
+                                className="gap-2 text-sm text-emerald-600 cursor-pointer"
+                                onClick={() => handleDisburse(need)}
+                            >
+                                <Plus className="h-4 w-4" /> Disburse Funds
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                                className="gap-2 text-sm text-[#344054] cursor-pointer"
+                                onClick={() => handleHistory(need)}
+                            >
+                                <Eye className="h-4 w-4 text-blue-500" /> Financial Activity
+                            </DropdownMenuItem>
                             <DropdownMenuItem 
                                 className="gap-2 text-sm text-[#344054] cursor-pointer"
                                 onClick={() => handleEdit(need)}
@@ -204,6 +236,19 @@ export default function NeedsPage() {
                     isOpen={isModalOpen}
                     onOpenChange={setIsModalOpen}
                     initialData={selectedNeed}
+                />
+
+                <DisbursementModal
+                    isOpen={isDisburseModalOpen}
+                    onOpenChange={setIsDisburseModalOpen}
+                    needId={activeDisbursementNeed?.id}
+                />
+
+                <DisbursementHistoryModal
+                    isOpen={isHistoryModalOpen}
+                    onOpenChange={setIsHistoryModalOpen}
+                    needId={activeDisbursementNeed?.id}
+                    title={activeDisbursementNeed?.name}
                 />
 
                 {/* Table Section */}
