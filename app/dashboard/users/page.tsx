@@ -181,12 +181,14 @@ function MemberActionCell({
     const [isChangeRoleOpen, setIsChangeRoleOpen] = React.useState(false);
     const queryClient = useQueryClient();
     const isSuspended = user.status === "suspended";
+    const isDeactivated = user.status === "deactivated";
 
     const blockMutation = useMutation({
         mutationFn: () => usersService.blockUser(user.id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["users"] });
             setIsSuspendOpen(false);
+            toast.success("User suspended successfully");
         },
         onError: (e: Error) => {
             toast.error(e.message || "Failed to suspend user");
@@ -199,6 +201,7 @@ function MemberActionCell({
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["users"] });
             setIsSuspendOpen(false);
+            toast.success("User unsuspended successfully");
         },
         onError: (e: Error) => {
             toast.error(e.message || "Failed to unsuspend user");
@@ -206,7 +209,41 @@ function MemberActionCell({
         },
     });
 
-    const isSubmitting = blockMutation.isPending || unblockMutation.isPending;
+    const reactivateMutation = useMutation({
+        mutationFn: () => usersService.reactivateUser(user.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["users"] });
+            setIsSuspendOpen(false);
+            toast.success("User reactivated successfully");
+        },
+        onError: (e: Error) => {
+            toast.error(e.message || "Failed to reactivate user");
+            setIsSuspendOpen(false);
+        },
+    });
+
+    const isSubmitting =
+        blockMutation.isPending ||
+        unblockMutation.isPending ||
+        reactivateMutation.isPending;
+
+    const statusActionLabel = isDeactivated
+        ? "Reactivate User"
+        : isSuspended
+          ? "Unsuspend User"
+          : "Suspend User";
+
+    const confirmStatusAction = () => {
+        if (isDeactivated) {
+            reactivateMutation.mutate();
+            return;
+        }
+        if (isSuspended) {
+            unblockMutation.mutate();
+            return;
+        }
+        blockMutation.mutate();
+    };
 
     return (
         <>
@@ -231,26 +268,27 @@ function MemberActionCell({
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         className={
-                            isSuspended ? "text-green-600" : "text-red-600"
+                            isDeactivated || isSuspended
+                                ? "text-green-600"
+                                : "text-red-600"
                         }
                         onClick={() => setIsSuspendOpen(true)}
                     >
-                        {isSuspended ? "Unsuspend User" : "Suspend User"}
+                        {statusActionLabel}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Suspend / Unsuspend Dialog */}
             <Dialog open={isSuspendOpen} onOpenChange={setIsSuspendOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            {isSuspended ? "Unsuspend User" : "Suspend User"}
-                        </DialogTitle>
+                        <DialogTitle>{statusActionLabel}</DialogTitle>
                         <DialogDescription>
-                            {isSuspended
-                                ? `Are you sure you want to unsuspend ${user.profile?.first_name || "this user"}? They will regain access to the platform.`
-                                : `Are you sure you want to suspend ${user.profile?.first_name || "this user"}? They will lose access to the platform until unsuspended.`}
+                            {isDeactivated
+                                ? `Are you sure you want to reactivate ${user.profile?.first_name || "this user"}? They will regain access to the platform.`
+                                : isSuspended
+                                  ? `Are you sure you want to unsuspend ${user.profile?.first_name || "this user"}? They will regain access to the platform.`
+                                  : `Are you sure you want to suspend ${user.profile?.first_name || "this user"}? They will lose access to the platform until unsuspended.`}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="mt-4 gap-2 sm:gap-0">
@@ -263,22 +301,20 @@ function MemberActionCell({
                         </Button>
                         <Button
                             className={
-                                isSuspended
+                                isDeactivated || isSuspended
                                     ? "bg-green-600 hover:bg-green-700 text-white"
                                     : "bg-red-600 hover:bg-red-700 text-white"
                             }
-                            onClick={() =>
-                                isSuspended
-                                    ? unblockMutation.mutate()
-                                    : blockMutation.mutate()
-                            }
+                            onClick={confirmStatusAction}
                             disabled={isSubmitting}
                         >
                             {isSubmitting
                                 ? "Processing…"
-                                : isSuspended
-                                  ? "Unsuspend"
-                                  : "Suspend"}
+                                : isDeactivated
+                                  ? "Reactivate"
+                                  : isSuspended
+                                    ? "Unsuspend"
+                                    : "Suspend"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

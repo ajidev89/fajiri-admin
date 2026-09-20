@@ -112,11 +112,13 @@ export default function UserDetailsPage() {
     }, [user, userDonations]);
 
     const isSuspended = user?.status === "suspended";
+    const isDeactivated = user?.status === "deactivated";
 
     const blockMutation = useMutation({
         mutationFn: () => usersService.blockUser(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["user", id] });
+            queryClient.invalidateQueries({ queryKey: ["users"] });
             setIsSuspendModalOpen(false);
             toast.success("User suspended successfully");
         },
@@ -129,6 +131,7 @@ export default function UserDetailsPage() {
         mutationFn: () => usersService.unblockUser(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["user", id] });
+            queryClient.invalidateQueries({ queryKey: ["users"] });
             setIsSuspendModalOpen(false);
             toast.success("User unsuspended successfully");
         },
@@ -137,15 +140,41 @@ export default function UserDetailsPage() {
         },
     });
 
+    const reactivateMutation = useMutation({
+        mutationFn: () => usersService.reactivateUser(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["user", id] });
+            queryClient.invalidateQueries({ queryKey: ["users"] });
+            setIsSuspendModalOpen(false);
+            toast.success("User reactivated successfully");
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || "Failed to reactivate user");
+        },
+    });
+
+    const statusActionLabel = isDeactivated
+        ? "Reactivate User"
+        : isSuspended
+          ? "Unsuspend User"
+          : "Suspend User";
+
     const handleConfirm = () => {
+        if (isDeactivated) {
+            reactivateMutation.mutate();
+            return;
+        }
         if (isSuspended) {
             unblockMutation.mutate();
-        } else {
-            blockMutation.mutate();
+            return;
         }
+        blockMutation.mutate();
     };
 
-    const isSubmitting = blockMutation.isPending || unblockMutation.isPending;
+    const isSubmitting =
+        blockMutation.isPending ||
+        unblockMutation.isPending ||
+        reactivateMutation.isPending;
 
 
     if (isLoading) {
@@ -231,11 +260,13 @@ export default function UserDetailsPage() {
                             <DropdownMenuItem 
                                 className={cn(
                                     "rounded-lg cursor-pointer font-medium",
-                                    isSuspended ? "text-green-600 focus:text-green-600 focus:bg-green-50" : "text-red-600 focus:text-red-600 focus:bg-red-50"
+                                    isDeactivated || isSuspended
+                                        ? "text-green-600 focus:text-green-600 focus:bg-green-50"
+                                        : "text-red-600 focus:text-red-600 focus:bg-red-50"
                                 )}
                                 onClick={() => setIsSuspendModalOpen(true)}
                             >
-                                {isSuspended ? "Unsuspend User" : "Suspend User"}
+                                {statusActionLabel}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -851,12 +882,14 @@ export default function UserDetailsPage() {
                 <DialogContent className="rounded-3xl max-w-md p-8">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold text-[#101828]">
-                            {isSuspended ? "Unsuspend User" : "Suspend User"}
+                            {statusActionLabel}
                         </DialogTitle>
                         <DialogDescription className="text-[#475467] pt-2">
-                            {isSuspended
-                                ? `Are you sure you want to unsuspend ${user?.profile?.first_name || "this user"}? They will regain access to the platform.`
-                                : `Are you sure you want to suspend ${user?.profile?.first_name || "this user"}? They will lose access to the platform until unsuspended.`}
+                            {isDeactivated
+                                ? `Are you sure you want to reactivate ${user?.profile?.first_name || "this user"}? They will regain access to the platform.`
+                                : isSuspended
+                                  ? `Are you sure you want to unsuspend ${user?.profile?.first_name || "this user"}? They will regain access to the platform.`
+                                  : `Are you sure you want to suspend ${user?.profile?.first_name || "this user"}? They will lose access to the platform until unsuspended.`}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="mt-8 gap-3 sm:gap-0">
@@ -872,7 +905,7 @@ export default function UserDetailsPage() {
                             variant="default"
                             className={cn(
                                 "flex-1 rounded-xl h-11 font-semibold text-white",
-                                isSuspended
+                                isDeactivated || isSuspended
                                     ? "bg-green-600 hover:bg-green-700"
                                     : "bg-red-600 hover:bg-red-700"
                             )}
@@ -881,9 +914,11 @@ export default function UserDetailsPage() {
                         >
                             {isSubmitting
                                 ? "Processing..."
-                                : isSuspended
-                                  ? "Unsuspend"
-                                  : "Suspend"}
+                                : isDeactivated
+                                  ? "Reactivate"
+                                  : isSuspended
+                                    ? "Unsuspend"
+                                    : "Suspend"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -88,6 +88,12 @@ export const usersService = {
             `/users/${userId}/unsuspend`,
         );
     },
+
+    reactivateUser(userId: string) {
+        return apiClient.put<ApiResponse<unknown>>(
+            `/users/${userId}/reactivate`,
+        );
+    },
     getUserAudits(userId: string) {
         return apiClient.get<ApiResponse<any[]>>(`/users/${userId}/audits`);
     },
