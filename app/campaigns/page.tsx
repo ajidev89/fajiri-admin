@@ -14,8 +14,8 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from "../../../components/ui/dropdown-menu";
-import { Button } from "../../../components/ui/button";
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { CAMPAIGN_STATUS_FILTER, useServerTable } from "@/lib/use-server-table";

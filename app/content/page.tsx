@@ -767,7 +767,21 @@ const getPollColumns = (
     },
 ];
 
-export default function ContentManagementPage() {
+export default function ContentPage() {
+    return (
+        <React.Suspense
+            fallback={
+                <DashboardLayout>
+                    <div className="bg-white rounded-2xl border border-[#EAECF0] h-96 animate-pulse" />
+                </DashboardLayout>
+            }
+        >
+            <ContentManagementPage />
+        </React.Suspense>
+    );
+}
+
+function ContentManagementPage() {
     const { user } = useAuthStore();
     const router = useRouter();
     const pathname = usePathname();
