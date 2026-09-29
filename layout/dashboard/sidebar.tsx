@@ -21,6 +21,7 @@ import {
     Trophy,
     Network,
     Bell,
+    CircleHelp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Cookies from "js-cookie";
@@ -42,6 +43,7 @@ const sidebarItems = [
     { label: "Leaderboard", icon: Trophy, href: "/leaderboard" },
     { label: "Family Tree", icon: Network, href: "/family-tree" },
     { label: "Announcements", icon: Bell, href: "/announcements" },
+    { label: "FAQs", icon: CircleHelp, href: "/faqs" },
     { label: "Disbursements", icon: Receipt, href: "/disbursements" },
 ];
 
@@ -88,6 +90,7 @@ export function Sidebar() {
             "Users": "user_management",
             "Fundraiser": "user_management",
             "Content Management": "system_settings",
+            "FAQs": "system_settings",
             "Leaderboard": "reports_analytics",
             "Family Tree": "user_management",
             "Disbursements": "financial_records",

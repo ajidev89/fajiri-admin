@@ -44,6 +44,10 @@ import {
     type Event,
     partnerService,
     type Partner,
+    ambassadorService,
+    type Ambassador,
+    testimonyService,
+    type Testimony,
     initiativeService,
     type Initiative,
     insuranceService,
@@ -55,6 +59,8 @@ import {
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { InitiativeModal } from "@/components/dashboard/content/initiatives/initiative-modal";
+import { AmbassadorModal } from "@/components/dashboard/content/ambassadors/ambassador-modal";
+import { TestimonyModal } from "@/components/dashboard/content/testimonies/testimony-modal";
 import { InsuranceModal } from "@/components/dashboard/content/insurances/insurance-modal";
 import {
     BlogPreviewModal,
@@ -67,6 +73,8 @@ const CONTENT_TABS = [
     "blog",
     "events",
     "partners",
+    "ambassadors",
+    "testimonies",
     "initiatives",
     "insurances",
     "media",
@@ -447,6 +455,132 @@ const getPartnerColumns = (
     },
 ];
 
+const getAmbassadorColumns = (
+    onEdit: (ambassador: Ambassador) => void,
+    onDelete: (id: string) => void,
+): ColumnDef<Ambassador>[] => [
+    {
+        accessorKey: "photo",
+        header: "Photo",
+        cell: ({ row }) => (
+            <Avatar className="h-10 w-10 rounded-lg border border-[#EAECF0]">
+                <AvatarImage src={row.original.photo || ""} className="object-cover" />
+                <AvatarFallback className="rounded-lg bg-[#F9FAFB] text-xs">
+                    {row.original.name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+            </Avatar>
+        ),
+    },
+    {
+        accessorKey: "name",
+        header: "Name",
+        cell: ({ row }) => (
+            <div className="font-medium text-[#101828]">{row.original.name}</div>
+        ),
+    },
+    {
+        accessorKey: "title",
+        header: "Title",
+        cell: ({ row }) => (
+            <span className="text-sm text-[#475467]">{row.original.title}</span>
+        ),
+    },
+    {
+        accessorKey: "sort_order",
+        header: "Order",
+        cell: ({ row }) => (
+            <span className="text-[#667085]">{row.original.sort_order}</span>
+        ),
+    },
+    {
+        id: "actions",
+        cell: ({ row }) => (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-[#667085]">
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEdit(row.original)}>
+                        Edit Ambassador
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => onDelete(row.original.id)}
+                    >
+                        Delete Ambassador
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        ),
+    },
+];
+
+const getTestimonyColumns = (
+    onEdit: (testimony: Testimony) => void,
+    onDelete: (id: string) => void,
+): ColumnDef<Testimony>[] => [
+    {
+        accessorKey: "photo",
+        header: "Photo",
+        cell: ({ row }) => (
+            <Avatar className="h-10 w-10 rounded-lg border border-[#EAECF0]">
+                <AvatarImage src={row.original.photo || ""} className="object-cover" />
+                <AvatarFallback className="rounded-lg bg-[#F9FAFB] text-xs">
+                    {row.original.name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+            </Avatar>
+        ),
+    },
+    {
+        accessorKey: "name",
+        header: "Name",
+        cell: ({ row }) => (
+            <div className="font-medium text-[#101828]">
+                {row.original.name}, ({row.original.age_label})
+            </div>
+        ),
+    },
+    {
+        accessorKey: "story",
+        header: "Story",
+        cell: ({ row }) => (
+            <span className="text-sm text-[#475467] line-clamp-2 max-w-md">{row.original.story}</span>
+        ),
+    },
+    {
+        accessorKey: "sort_order",
+        header: "Order",
+        cell: ({ row }) => (
+            <span className="text-[#667085]">{row.original.sort_order}</span>
+        ),
+    },
+    {
+        id: "actions",
+        cell: ({ row }) => (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-[#667085]">
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEdit(row.original)}>
+                        Edit Testimony
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => onDelete(row.original.id)}
+                    >
+                        Delete Testimony
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        ),
+    },
+];
+
 const getInitiativeColumns = (
     onEdit: (initiative: Initiative) => void,
     onDelete: (id: string) => void,
@@ -806,6 +940,11 @@ function ContentManagementPage() {
     };
     
     // Initiative Modal state
+    const [isAmbassadorModalOpen, setIsAmbassadorModalOpen] = React.useState(false);
+    const [selectedAmbassador, setSelectedAmbassador] = React.useState<Ambassador | null>(null);
+    const [isTestimonyModalOpen, setIsTestimonyModalOpen] = React.useState(false);
+    const [selectedTestimony, setSelectedTestimony] = React.useState<Testimony | null>(null);
+
     const [isInitiativeModalOpen, setIsInitiativeModalOpen] = React.useState(false);
     const [selectedInitiative, setSelectedInitiative] = React.useState<Initiative | null>(null);
 
@@ -828,6 +967,8 @@ function ContentManagementPage() {
         sortBy: "name",
         extra: selectedCountry !== "all" ? { country_id: selectedCountry } : {},
     });
+    const ambassadorsTable = useServerTable({ sortBy: "sort_order" });
+    const testimoniesTable = useServerTable({ sortBy: "sort_order" });
     const initiativesTable = useServerTable({
         sortBy: "title",
         extra: isFundraiser && user?.id ? { added_by: user.id } : {},
@@ -859,6 +1000,16 @@ function ContentManagementPage() {
         queryFn: () => partnerService.getPartners(partnersTable.params),
         placeholderData: keepPreviousData,
     });
+    const { data: ambassadorsRes, isLoading: isLoadingAmbassadors } = useQuery({
+        queryKey: ["ambassadors", ambassadorsTable.params],
+        queryFn: () => ambassadorService.getAmbassadors(ambassadorsTable.params),
+        placeholderData: keepPreviousData,
+    });
+    const { data: testimoniesRes, isLoading: isLoadingTestimonies } = useQuery({
+        queryKey: ["testimonies", testimoniesTable.params],
+        queryFn: () => testimonyService.getTestimonies(testimoniesTable.params),
+        placeholderData: keepPreviousData,
+    });
     const { data: initiativesRes, isLoading: isLoadingInitiatives } = useQuery({
         queryKey: ["initiatives", initiativesTable.params],
         queryFn: () => initiativeService.getInitiatives(initiativesTable.params),
@@ -878,6 +1029,8 @@ function ContentManagementPage() {
     const posts = postsRes?.data ?? [];
     const events = eventsRes?.data ?? [];
     const partners = partnersRes?.data ?? [];
+    const ambassadors = ambassadorsRes?.data ?? [];
+    const testimonies = testimoniesRes?.data ?? [];
     const initiatives = initiativesRes?.data ?? [];
     const insurances = insurancesRes?.data ?? [];
     const polls = pollsRes?.data ?? [];
@@ -926,6 +1079,50 @@ function ContentManagementPage() {
         } catch (error: any) {
             toast.error(error.message || "Failed to delete partner");
         }
+    };
+
+    const handleDeleteAmbassador = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this ambassador?")) return;
+
+        try {
+            await ambassadorService.deleteAmbassador(id);
+            toast.success("Ambassador deleted successfully");
+            queryClient.invalidateQueries({ queryKey: ["ambassadors"] });
+        } catch (error: any) {
+            toast.error(error.message || "Failed to delete ambassador");
+        }
+    };
+
+    const handleEditAmbassador = (ambassador: Ambassador) => {
+        setSelectedAmbassador(ambassador);
+        setIsAmbassadorModalOpen(true);
+    };
+
+    const handleCreateAmbassador = () => {
+        setSelectedAmbassador(null);
+        setIsAmbassadorModalOpen(true);
+    };
+
+    const handleDeleteTestimony = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this testimony?")) return;
+
+        try {
+            await testimonyService.deleteTestimony(id);
+            toast.success("Testimony deleted successfully");
+            queryClient.invalidateQueries({ queryKey: ["testimonies"] });
+        } catch (error: any) {
+            toast.error(error.message || "Failed to delete testimony");
+        }
+    };
+
+    const handleEditTestimony = (testimony: Testimony) => {
+        setSelectedTestimony(testimony);
+        setIsTestimonyModalOpen(true);
+    };
+
+    const handleCreateTestimony = () => {
+        setSelectedTestimony(null);
+        setIsTestimonyModalOpen(true);
     };
 
     const handleDeleteInitiative = async (id: string) => {
@@ -983,6 +1180,14 @@ function ContentManagementPage() {
     const partnerColumns = React.useMemo(
         () => getPartnerColumns(handleDeletePartner),
         [handleDeletePartner],
+    );
+    const ambassadorColumns = React.useMemo(
+        () => getAmbassadorColumns(handleEditAmbassador, handleDeleteAmbassador),
+        [handleEditAmbassador, handleDeleteAmbassador],
+    );
+    const testimonyColumns = React.useMemo(
+        () => getTestimonyColumns(handleEditTestimony, handleDeleteTestimony),
+        [handleEditTestimony, handleDeleteTestimony],
     );
     const initiativeColumns = React.useMemo(
         () => getInitiativeColumns(handleEditInitiative, handleDeleteInitiative),
@@ -1067,6 +1272,18 @@ function ContentManagementPage() {
                             className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
                         >
                             Partners
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="ambassadors"
+                            className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
+                        >
+                            Ambassadors
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="testimonies"
+                            className="h-auto px-0 py-3 rounded-none bg-transparent border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none font-semibold text-[#667085]"
+                        >
+                            Testimonies
                         </TabsTrigger>
                         <TabsTrigger
                             value="initiatives"
@@ -1192,6 +1409,64 @@ function ContentManagementPage() {
                     </TabsContent>
 
                     <TabsContent
+                        value="ambassadors"
+                        className="mt-8 space-y-6 focus-visible:ring-0"
+                    >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <h3 className="text-xl font-bold text-[#101828]">
+                                Ambassadors
+                            </h3>
+                            <Button
+                                onClick={handleCreateAmbassador}
+                                className="bg-primary hover:bg-primary/90 text-white font-semibold flex items-center gap-2"
+                            >
+                                <Plus className="h-4 w-4" /> Add Ambassador
+                            </Button>
+                        </div>
+
+                        <DataTable
+                            columns={ambassadorColumns}
+                            data={ambassadors}
+                            searchKey="name"
+                            title="Ambassadors Table"
+                            isLoading={isLoadingAmbassadors}
+                            {...ambassadorsTable.tableProps}
+                            pageCount={listMeta(ambassadorsRes).pageCount}
+                            total={listMeta(ambassadorsRes).total}
+                            sortField="name"
+                        />
+                    </TabsContent>
+
+                    <TabsContent
+                        value="testimonies"
+                        className="mt-8 space-y-6 focus-visible:ring-0"
+                    >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <h3 className="text-xl font-bold text-[#101828]">
+                                Testimonies
+                            </h3>
+                            <Button
+                                onClick={handleCreateTestimony}
+                                className="bg-primary hover:bg-primary/90 text-white font-semibold flex items-center gap-2"
+                            >
+                                <Plus className="h-4 w-4" /> Add Testimony
+                            </Button>
+                        </div>
+
+                        <DataTable
+                            columns={testimonyColumns}
+                            data={testimonies}
+                            searchKey="name"
+                            title="Testimonies Table"
+                            isLoading={isLoadingTestimonies}
+                            {...testimoniesTable.tableProps}
+                            pageCount={listMeta(testimoniesRes).pageCount}
+                            total={listMeta(testimoniesRes).total}
+                            sortField="name"
+                        />
+                    </TabsContent>
+
+                    <TabsContent
                         value="media"
                         className="mt-8 focus-visible:ring-0"
                     >
@@ -1287,6 +1562,18 @@ function ContentManagementPage() {
                         />
                     </TabsContent>
                 </Tabs>
+
+                <AmbassadorModal
+                    isOpen={isAmbassadorModalOpen}
+                    onOpenChange={setIsAmbassadorModalOpen}
+                    initialData={selectedAmbassador}
+                />
+
+                <TestimonyModal
+                    isOpen={isTestimonyModalOpen}
+                    onOpenChange={setIsTestimonyModalOpen}
+                    initialData={selectedTestimony}
+                />
 
                 <InitiativeModal
                     isOpen={isInitiativeModalOpen}
